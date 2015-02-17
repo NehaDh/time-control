@@ -1,0 +1,84 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.almende.time-control</groupId>
+		<artifactId>tc-parent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>tc-api</artifactId>
+
+	<properties>
+		<jscience.version>4.3.1</jscience.version>
+		<google-rfc-2445.version>20110304</google-rfc-2445.version>
+		<joda-time.version>2.7</joda-time.version>
+		<threetenbp.version>1.2</threetenbp.version>
+		<threeten-extra.version>0.9</threeten-extra.version>
+
+		<!-- testing -->
+		<junit.version>4.12</junit.version>
+	</properties>
+
+	<dependencies>
+
+		<dependency>
+			<!-- Java Extension API for dependency injection -->
+			<groupId>javax.inject</groupId>
+			<artifactId>javax.inject</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>tc-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<!-- iCal recurrence rule (RRULE) implementation -->
+		<dependency>
+			<groupId>org.scala-saddle</groupId>
+			<artifactId>google-rfc-2445</artifactId>
+			<version>${google-rfc-2445.version}</version>
+			<exclusions>
+				<!-- use a more recent implementation of joda-time -->
+				<exclusion>
+					<groupId>joda-time</groupId>
+					<artifactId>joda-time</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<!-- Time-related implementations, similar to JSR-310 -->
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
+			<version>${joda-time.version}</version>
+		</dependency>
+
+		<!-- reference implementation of javax.measurement JSR-275 -->
+		<dependency>
+			<groupId>org.jscience</groupId>
+			<artifactId>jscience</artifactId>
+			<version>${jscience.version}</version>
+		</dependency>
+
+		<!-- Backport of JSR-310 from JDK 8 to JDK 7 and JDK 6. NOT an implementation 
+			of the JSR. -->
+		<!-- <dependency> <groupId>org.threeten</groupId> <artifactId>threetenbp</artifactId> 
+			<version>${threetenbp.version}</version> </dependency> <dependency> <groupId>org.threeten</groupId> 
+			<artifactId>threeten-extra</artifactId> <version>${threeten-extra.version}</version> 
+			</dependency> -->
+
+		<dependency>
+			<!-- Used as unit testing framework, supports test-driven development -->
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+</project>

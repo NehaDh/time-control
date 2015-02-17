@@ -1,0 +1,20 @@
+{
+	"configuration":{
+		"loggers":{
+			"root":{
+				"level":"trace",
+				"AppenderRef":{
+					"ref":"STDOUT"
+				}
+			}
+		},
+		"appenders":{
+			"Console":{
+				"name":"STDOUT",
+				"PatternLayout":{
+					"pattern":"%m%n"
+				}
+			}
+		}
+	}
+}

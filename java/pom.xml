@@ -1,0 +1,137 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.almende.time-control</groupId>
+	<artifactId>tc-parent</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<properties>
+		<source>1.7</source>
+		<encoding>UTF-8</encoding>
+		<skipTests>false</skipTests>
+
+		<maven.test.skip>${skipTests}</maven.test.skip>
+		<project.build.sourceLevel>${source}</project.build.sourceLevel>
+		<project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
+
+		<persistence-api.version>1.0.2</persistence-api.version>
+		<javax.persistence.version>2.1.0</javax.persistence.version>
+		<hibernate-jpa-2.1-api.version>1.0.0.Final</hibernate-jpa-2.1-api.version>
+		<javax.inject.version>1</javax.inject.version>
+		<javax.servlet-api.version>3.1.0</javax.servlet-api.version>
+		<validation-api.version>1.1.0.Final</validation-api.version>
+		<jsr-275.version>1.0.0</jsr-275.version>
+
+		<log4j.version>2.1</log4j.version>
+
+		<maven-dependency-plugin.version>2.4</maven-dependency-plugin.version>
+	</properties>
+
+	<modules>
+		<module>tc-core</module>
+		<module>tc-api</module>
+		<module>tc-master</module>
+		<module>tc-slave</module>
+		<module>tc-test</module>
+	</modules>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<!-- Apache Logging API -->
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-bom</artifactId>
+				<version>${log4j.version}</version>
+				<scope>import</scope>
+				<type>pom</type>
+			</dependency>
+
+			<dependency>
+				<!-- Java Extension API for servlets -->
+				<groupId>javax.servlet</groupId>
+				<artifactId>javax.servlet-api</artifactId>
+				<version>${javax.servlet-api.version}</version>
+			</dependency>
+
+			<dependency>
+				<!-- Java Extension API for persistence, JSR-220 (JPA 1.0) -->
+				<groupId>javax.persistence</groupId>
+				<artifactId>persistence-api</artifactId>
+				<version>${persistence-api.version}</version>
+			</dependency>
+
+			<dependency>
+				<!-- Java Extension API for persistence, JSR-338 (JPA 2.1) and JSR-317 
+					(JPA 2.0) -->
+				<groupId>org.hibernate.javax.persistence</groupId>
+				<artifactId>hibernate-jpa-2.1-api</artifactId>
+				<version>${hibernate-jpa-2.1-api.version}</version>
+			</dependency>
+
+			<dependency>
+				<!-- Java Extension API for persistence, JSR-338 (JPA 2.1) and JSR-317 
+					(JPA 2.0) -->
+				<groupId>org.eclipse.persistence</groupId>
+				<artifactId>javax.persistence</artifactId>
+				<version>${javax.persistence.version}</version>
+			</dependency>
+
+			<dependency>
+				<!-- Java Extension API for dependency injection (CDI), JSR-330 -->
+				<groupId>javax.inject</groupId>
+				<artifactId>javax.inject</artifactId>
+				<version>${javax.inject.version}</version>
+			</dependency>
+
+			<dependency>
+				<!-- Java Extension API for bean validation, JSR-303 -->
+				<groupId>javax.validation</groupId>
+				<artifactId>validation-api</artifactId>
+				<version>${validation-api.version}</version>
+			</dependency>
+
+
+			<dependency>
+				<!-- Java Extension API for (scientific) measures, JSR-275 -->
+				<groupId>javax.measure</groupId>
+				<artifactId>jsr-275</artifactId>
+				<version>${jsr-275.version}</version>
+			</dependency>
+
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<source>${project.build.sourceLevel}</source>
+					<target>${project.build.sourceLevel}</target>
+					<encoding>${project.build.sourceEncoding}</encoding>
+					<compilerArgument>-Xlint:deprecation</compilerArgument>
+					<compilerArgument>-Xlint:unchecked</compilerArgument>
+					<verbose>true</verbose>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>${maven-dependency-plugin.version}</version>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>
