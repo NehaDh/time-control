@@ -19,18 +19,18 @@
 package com.almende.timecontrol.api.eve;
 
 import com.almende.eve.transform.rpc.annotation.Name;
-import com.almende.timecontrol.api.TimedAPI;
+import com.almende.timecontrol.api.SlaveAPI;
 import com.almende.timecontrol.entity.ClockConfig;
 import com.almende.timecontrol.entity.Job;
 
 /**
- * {@link EveTimedAPI} adds {@link Name} annotations to {@link TimedAPI}
+ * {@link EveTimedAPI} adds {@link Name} annotations to {@link SlaveAPI}
  * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public interface EveTimedAPI extends TimedAPI
+public interface EveTimedAPI extends SlaveAPI
 {
 
 	@Override

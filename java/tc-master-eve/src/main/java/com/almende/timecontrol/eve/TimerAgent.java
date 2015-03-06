@@ -23,7 +23,6 @@ import com.almende.eve.agent.AgentBuilder;
 import com.almende.eve.agent.AgentConfig;
 import com.almende.eve.capabilities.Config;
 import com.almende.eve.config.YamlReader;
-import com.almende.timecontrol.api.TimerAPI;
 import com.almende.timecontrol.api.eve.EveAgentConfig;
 import com.almende.timecontrol.api.eve.EveTimerAPI;
 import com.almende.timecontrol.entity.ClockConfig;
@@ -260,7 +259,7 @@ public class TimerAgent extends Agent implements EveTimerAPI
 	private static final Map<String, TimerAgent> INSTANCES = new TreeMap<>();
 
 	/** */
-	public static TimerAPI getInstance(final String timerID)
+	public static TimerAgent getInstance(final String timerID)
 	{
 		synchronized (INSTANCES)
 		{

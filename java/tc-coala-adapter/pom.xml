@@ -57,35 +57,4 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.eclipse.jetty</groupId>
-				<artifactId>jetty-maven-plugin</artifactId>
-				<version>${jetty.version}</version>
-				<configuration>
-					<scanIntervalSeconds>2</scanIntervalSeconds>
-					<stopKey>foo</stopKey>
-					<stopPort>9999</stopPort>
-					<contextXml>${basedir}/src/test/resources/jetty-context.xml</contextXml>
-					<httpConnector>
-						<port>${jetty.port}</port>
-					</httpConnector>
-					<contextPath>/</contextPath>
-					<systemProperties>
-						<systemProperty>
-							<name>coala.configuration</name>
-							<value>adapt4ee.properties</value>
-						</systemProperty>
-					</systemProperties>
-				</configuration>
-				<!-- <executions> <execution> <id>start-jetty</id> <phase>pre-integration-test</phase> 
-					<goals> <goal>start</goal> </goals> <configuration> <scanIntervalSeconds>0</scanIntervalSeconds> 
-					<daemon>true</daemon> </configuration> </execution> <execution> <id>stop-jetty</id> 
-					<phase>post-integration-test</phase> <goals> <goal>stop</goal> </goals> </execution> 
-					</executions> -->
-			</plugin>
-		</plugins>
-	</build>
 </project>

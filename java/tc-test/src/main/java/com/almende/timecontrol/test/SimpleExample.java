@@ -23,7 +23,6 @@ package com.almende.timecontrol.test;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.almende.timecontrol.api.TimerAPI;
 import com.almende.timecontrol.entity.SlaveConfig;
 import com.almende.timecontrol.entity.TimerConfig;
 import com.almende.timecontrol.entity.TimerStatus;
@@ -52,15 +51,15 @@ public class SimpleExample
 		final TimerConfig timerConfig = TimerConfig.Builder.forID(masterId)
 				.build();
 		LOG.info("Starting master with config: {}", timerConfig);
-		// final TimerAgent master =
-		TimerAgent.getInstance(timerConfig);
+		final TimerAgent master = TimerAgent.getInstance(masterId);
+		master.initialize(timerConfig);
 
 		final SlaveConfig slaveConfig = SlaveConfig.Builder
 				.forID("exampleSlave1")
 				.withTimerId(TimerConfig.ID.valueOf(masterId)).build();
 
 		LOG.info("Connecting slave with config: {}", slaveConfig);
-		final TimerAPI slave = SlaveAgent.getInstance(slaveConfig);
+		final SlaveAgent slave = SlaveAgent.getInstance(slaveConfig);
 
 		final TimerStatus status = slave.getStatus();
 		LOG.info("Connected to master, got status: {}", status);

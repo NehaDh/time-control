@@ -42,6 +42,8 @@
 		<github.repository.tmpdir>${user.dir}/target/mvn-repo</github.repository.tmpdir>
 		<github.repository.url>https://raw.github.com/almende/timecontrol/mvn-repo/</github.repository.url>
 		<site-maven-plugin.version>0.9</site-maven-plugin.version>
+		
+		<maven-deploy-plugin.version>2.8.1</maven-deploy-plugin.version>
 	</properties>
 
 	<modules>

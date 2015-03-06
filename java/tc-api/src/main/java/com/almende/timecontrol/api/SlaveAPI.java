@@ -24,13 +24,13 @@ import com.almende.timecontrol.entity.SlaveConfig;
 import com.almende.timecontrol.entity.Trigger;
 
 /**
- * {@link TimedAPI}
+ * {@link SlaveAPI}
  * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public interface TimedAPI
+public interface SlaveAPI
 {
 	/**
 	 * @return the latest {@link SlaveConfig} status information for this
@@ -40,7 +40,7 @@ public interface TimedAPI
 
 	/**
 	 * @return the latest {@link SlaveStatus} status information for this
-	 *         {@link TimeControlSlaveAPI}, useful for reconnecting
+	 *         {@link SlaveAPI}, useful for reconnecting
 	 */
 	//SlaveStatus getStatus();
 

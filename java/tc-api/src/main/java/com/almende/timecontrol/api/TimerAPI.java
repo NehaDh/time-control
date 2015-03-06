@@ -42,7 +42,7 @@ public interface TimerAPI
 
 	/**
 	 * initiates/updates a {@link TimerConfig} which a {@link SlaveConfig} may
-	 * then join. Starts calling {@link TimedAPI#notify(ClockConfig)} at
+	 * then join. Starts calling {@link SlaveAPI#notify(ClockConfig)} at
 	 * specified {@link TimerConfig#address} <i>iff</i> it is non-null
 	 * 
 	 * @param config the {@link TimerConfig} to (re)register
