@@ -34,6 +34,72 @@ public interface TimeControl
 	String ID_KEY = "id";
 
 	/** */
+	String TIMER_KEY = "timer";
+
+	/** */
+	String TIMER_ID_KEY = "timerId";
+
+	/** */
+	String CLOCK_KEY = "clock";
+
+	/** */
+	String CLOCKS_KEY = "clocks";
+
+	/** */
+	String SLAVE_KEY = "slave";
+
+	/** */
+	String SLAVES_KEY = "slaves";
+
+	/** */
+	String TRIGGER_ID_KEY = "triggerId";
+
+	/** */
+	String LAST_CALL_KEY = "lastCall";
+	
+	/** */
+	String LAST_TRIGGER_ID_KEY = "lastTriggerId";
+	
+	/** */
+	String LAST_JOB_ID_KEY = "lastJobId";
+
+	/** */
+	String TRIGGERS_KEY = "triggers";
+
+	/** */
+	String UPCOMING_JOBS_KEY = "upcomingJobs";
+
+	/** */
+	String LISTENERS_KEY = "listeners";
+
+	/** */
+	String RESOLUTION_KEY = "resolution";
+
+	/** */
+	String OFFSET_KEY = "offset";
+
+	/** */
+	String DURATION_KEY = "duration";
+
+	/** */
+	String RECURRENCE_KEY = "recurrence";
+
+	/** */
+	String FORK_PARENT_ID_KEY = "forkParentID";
+
+	/** */
+	String FORK_TIME_KEY = "forkTime";
+
+	/** */
 	String STATUS_KEY = "status";
+
+	/** */
+	String PACE_KEY = "pace";
+
+	/** */
+	String TIME_KEY = "time";
+
+	/** */
+	String UNTIL_KEY = "until";
 
 }

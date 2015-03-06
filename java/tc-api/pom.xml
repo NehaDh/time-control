@@ -14,12 +14,10 @@
 	<properties>
 		<jscience.version>4.3.1</jscience.version>
 		<google-rfc-2445.version>20110304</google-rfc-2445.version>
+		<quartz.version>2.2.1</quartz.version>
 		<joda-time.version>2.7</joda-time.version>
 		<threetenbp.version>1.2</threetenbp.version>
 		<threeten-extra.version>0.9</threeten-extra.version>
-
-		<!-- testing -->
-		<junit.version>4.12</junit.version>
 	</properties>
 
 	<dependencies>
@@ -35,6 +33,19 @@
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tc-core</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+
+		<!-- Quartz implementation of CRON-like scheduler -->
+		<dependency>
+			<groupId>org.quartz-scheduler</groupId>
+			<artifactId>quartz</artifactId>
+			<version>${quartz.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- iCal recurrence rule (RRULE) implementation -->
@@ -67,16 +78,21 @@
 
 		<!-- Backport of JSR-310 from JDK 8 to JDK 7 and JDK 6. NOT an implementation 
 			of the JSR. -->
-		<!-- <dependency> <groupId>org.threeten</groupId> <artifactId>threetenbp</artifactId> 
-			<version>${threetenbp.version}</version> </dependency> <dependency> <groupId>org.threeten</groupId> 
-			<artifactId>threeten-extra</artifactId> <version>${threeten-extra.version}</version> 
-			</dependency> -->
+		<dependency>
+			<groupId>org.threeten</groupId>
+			<artifactId>threetenbp</artifactId>
+			<version>${threetenbp.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.threeten</groupId>
+			<artifactId>threeten-extra</artifactId>
+			<version>${threeten-extra.version}</version>
+		</dependency>
 
 		<dependency>
 			<!-- Used as unit testing framework, supports test-driven development -->
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

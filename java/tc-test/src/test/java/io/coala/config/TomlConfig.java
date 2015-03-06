@@ -85,7 +85,7 @@ public interface TomlConfig extends ConfigParent
 			final Toml result = new Toml();
 			try
 			{
-				final InputStream is = FileUtil.getFileAsInputStream(text);
+				final InputStream is = FileUtil.toInputStream(text);
 				result.parse(is);
 			} catch (final Throwable t)
 			{
@@ -118,7 +118,7 @@ public interface TomlConfig extends ConfigParent
 			final Toml result = new Toml();
 			try
 			{
-				final InputStream is = FileUtil.getFileAsInputStream(text);
+				final InputStream is = FileUtil.toInputStream(text);
 				result.parse(is);
 			} catch (final Throwable t)
 			{

@@ -20,7 +20,7 @@
  */
 package io.coala.error;
 
-import io.coala.type.DynaBean;
+import io.coala.json.dynabean.DynaBean;
 
 import java.util.Map;
 
@@ -34,18 +34,33 @@ import java.util.Map;
 public class ExceptionContext extends DynaBean
 {
 
+	/**
+	 * Provides access to protected method
+	 * 
+	 * @see DynaBean#any()
+	 */
 	@Override
 	public Map<String, Object> any()
 	{
 		return super.any();
 	}
 
+	/**
+	 * Provides access to protected method
+	 * 
+	 * @see DynaBean#set(String, Object)
+	 */
 	@Override
 	protected Object set(final String name, final Object value)
 	{
 		return super.set(name, value);
 	}
 
+	/**
+	 * Provides access to protected method
+	 * 
+	 * @see DynaBean#lock()
+	 */
 	@Override
 	protected void lock()
 	{

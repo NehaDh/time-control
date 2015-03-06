@@ -21,18 +21,17 @@ import io.coala.error.ExceptionBuilder;
 import io.coala.error.ManagedException;
 import io.coala.json.JsonUtil;
 
-import java.util.Arrays;
 import java.util.Properties;
 
 import org.aeonbits.owner.ConfigCache;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joda.time.Duration;
 import org.junit.Test;
 
 import rx.Observer;
 
-import com.almende.timecontrol.entity.Clock;
-import com.almende.timecontrol.entity.Trigger;
+import com.almende.timecontrol.entity.ClockConfig;
 
 /**
  * {@link BeanTest}
@@ -69,44 +68,47 @@ public class BeanTest
 					public void onNext(final ManagedException t)
 					{
 						LOG.trace("Observed exception: " + t.getContext());
-						// t.printStackTrace();
+						t.printStackTrace();
 					}
 				});
 
-		final Clock.ID parentID = Clock.ID.valueOf("\"theRoot\""); // TODO loose
+		LOG.trace("Period json: " + JsonUtil.stringify(Duration.parse("PT123s")));
+		// LOG.trace("Period json: "+JsonUtil.toJSON(Period.parse("PT1.4s")));
+
+		final ClockConfig.ID parentID = ClockConfig.ID.valueOf("\"theRoot\""); // TODO loose
 																	// quotes?
-		final Properties imports = new Properties();
-		imports.setProperty("forkParent", parentID.toString());
-		imports.setProperty("wallClockRate", "1.4");
-		imports.setProperty("time", "PT1.2S"); // TODO accept Number type?
-		// imports.setProperty("error", "{}"); // FIXME
-		// TODO check parseable JSON
-		final Clock config = ConfigCache.getOrCreate(Clock.class, imports);
-		LOG.trace("Config id: " + config.id());
-		LOG.trace("Config forkParent: " + config.forkParent());
-		LOG.trace("Config forkOffset: " + config.forkOffset());
-		LOG.trace("Config slaveTimeout: " + config.slaveTimeout());
-		LOG.trace("Config status: " + config.status());
-		LOG.trace("Config time: " + config.time());
-		LOG.trace("Config until: " + config.until());
-		LOG.trace("Config error: " + config.error());
-		LOG.trace("Config wallClockRate: " + config.wallClockRate());
-		final Clock clock = JsonUtil.valueOf(
-				"{\"id\":\"bla\",\"idasdsd\":[\"bla3w\"]}", Clock.class,
-				imports);
-		// clock.setName(new ClockRef.Builder().withValue("myClock").build());
+		final Properties defaults = new Properties();
+		defaults.setProperty("id", parentID.toString());
+		defaults.setProperty("time", "PT1.2S");
+		defaults.setProperty("status", ClockConfig.Status.WAITING.name());
+		defaults.setProperty("error", "{}"); // FIXME
+		defaults.setProperty("until", "\"P1W1DT0H0M0.000000001S\"");
+		defaults.setProperty("forkParent", parentID.toString());
+		defaults.setProperty("forkOffset", "10");
+		defaults.setProperty("slaveTimeout", "\"PT123.000000001S\"");
+		defaults.setProperty("wallClockRate", "1.4");
+		LOG.trace("Using defaults: " + defaults);
+
+		LOG.trace("Got defaults: "
+				+ ConfigCache.getOrCreate(ClockConfig.class, defaults));
+
+		final ClockConfig clock = JsonUtil.valueOf(
+				"{\"id\":\"bla\",\"idasdsd\":[\"bla3w\"]}", ClockConfig.class,
+				defaults);
+
 		LOG.trace("Clock: " + clock);
-		LOG.trace("Clock methods: "
-				+ Arrays.asList(clock.getClass().getDeclaredMethods()));
-		LOG.trace("Clock.name: " + clock.id() + ", type: "
-				+ clock.id().getClass().getSimpleName());
+		LOG.trace("Clock id: " + clock.id());
+		clock.setProperty("id", "\"myClock\"");
+		LOG.trace("Clock: " + clock);
+		LOG.trace("Clock id: " + clock.id());
 
-		LOG.trace("Clock.forkParent: " + clock.forkParent());
-		final Trigger trigger = JsonUtil.valueOf("{\"when\":{\"type\":1}}",
-				Trigger.class);
+		LOG.trace("Clock until: " + clock.until().toJava8());
 
-		LOG.trace("Trigger: " + trigger + ", when ["
-				+ trigger.when().type().getClass().getSimpleName() + "]: "
-				+ trigger.when().type().name());
+		// final Trigger trigger = JsonUtil.valueOf("{\"when\":{\"type\":1}}",
+		// Trigger.class);
+
+		// LOG.trace("Trigger: " + trigger + ", when ["
+		// + trigger.type().getClass().getSimpleName() + "]: "
+		// + trigger.when().type().name());
 	}
 }

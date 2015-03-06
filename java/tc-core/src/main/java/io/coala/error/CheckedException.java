@@ -62,7 +62,7 @@ public class CheckedException extends Exception implements ManagedException
 	@Override
 	public String toJSON()
 	{
-		return JsonUtil.toPrettyJSON(this);
+		return JsonUtil.toJSON(this);
 	}
 
 	@Override
@@ -78,16 +78,8 @@ public class CheckedException extends Exception implements ManagedException
 	 * @version $Id$
 	 * @author <a href="mailto:Rick@almende.org">Rick</a>
 	 */
-	public static class Builder extends ExceptionBuilder
+	public static class Builder extends ExceptionBuilder<Builder>
 	{
-		/** */
-		private final String message;
-
-		/** */
-		private final Throwable cause;
-
-		/** */
-		private final ExceptionContext context = new ExceptionContext();
 
 		/**
 		 * {@link Builder} constructor
@@ -99,22 +91,7 @@ public class CheckedException extends Exception implements ManagedException
 		 */
 		public Builder(final String message, final Throwable cause)
 		{
-			this.message = message;
-			this.cause = cause;
-			with("message", message);
-			with("cause", cause == null ? null : cause.getClass().getName());
-			with("trace", cause == null ? null : cause.getStackTrace());
-		}
-
-		/**
-		 * @param key the context entry key
-		 * @param value the context entry value
-		 * @return this {@link Builder}
-		 */
-		public Builder with(final String key, final Object value)
-		{
-			this.context.set(key, value);
-			return this;
+			super(message, cause);
 		}
 
 		@Override

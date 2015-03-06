@@ -79,7 +79,7 @@ public interface YamlConfig extends ConfigParent
 		{
 			try
 			{
-				final InputStream is = FileUtil.getFileAsInputStream(text);
+				final InputStream is = FileUtil.toInputStream(text);
 				return (Map<String, Object>) new Yaml().load(is);
 			} catch (final Throwable t)
 			{

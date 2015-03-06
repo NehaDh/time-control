@@ -25,15 +25,16 @@
 	<dependencies>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>tc-master</artifactId>
+			<artifactId>tc-master-eve</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>tc-slave</artifactId>
+			<artifactId>tc-slave-eve</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
+	
 		<dependency>
 			<!-- used for parsing YAML style configuration files -->
 			<groupId>org.yaml</groupId>
@@ -53,7 +54,6 @@
 			<!-- Used as unit testing framework, supports test-driven development -->
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

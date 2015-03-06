@@ -32,12 +32,9 @@
 
 	<dependencies>
 
-		<dependency>
-			<!-- Java Extension API for persistence via database, xml, etc. -->
-			<groupId>org.eclipse.persistence</groupId>
-			<artifactId>javax.persistence</artifactId>
-			<scope>provided</scope>
-		</dependency>
+		<!-- Java Extension API for persistence via database, xml, etc. -->
+		<!-- <dependency> <groupId>org.eclipse.persistence</groupId> <artifactId>javax.persistence</artifactId> 
+			<scope>provided</scope> </dependency> -->
 
 		<dependency>
 			<!-- Java Extension API for dependency injection (and/or aspect oriented 
@@ -79,8 +76,21 @@
 
 		<dependency>
 			<!-- JSON <-> Java object mapping -->
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-joda</artifactId>
+			<version>${jackson.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>joda-time</groupId>
+					<artifactId>joda-time</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<!-- JSON <-> Java object mapping -->
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-yaml</artifactId>
 			<version>${jackson.version}</version>
 		</dependency>
 
@@ -95,7 +105,6 @@
 			<!-- Used as unit testing framework, supports test-driven development -->
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

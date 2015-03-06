@@ -20,24 +20,29 @@
 package io.coala.json;
 
 import io.coala.error.ExceptionBuilder;
-import io.coala.refer.Identifier;
-import io.coala.type.DynaBean;
+import io.coala.json.dynabean.DynaBean;
 import io.coala.type.TypeUtil;
 
 import java.beans.PropertyEditorSupport;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 import org.aeonbits.owner.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 
 /**
  * {@link JsonUtil}
@@ -60,6 +65,7 @@ public class JsonUtil
 	{
 		// singleton design pattern
 		LOG.trace("Using jackson v: " + JOM.version());
+		JOM.registerModule(new JodaModule());
 	}
 
 	/** */
@@ -72,7 +78,7 @@ public class JsonUtil
 	 * @param object
 	 * @return
 	 */
-	public static String toJSON(final Object object)
+	public static String stringify(final Object object)
 	{
 		try
 		{
@@ -84,19 +90,10 @@ public class JsonUtil
 	}
 
 	/**
-	 * @param profile
-	 * @return
-	 */
-	public static JsonNode toJSONNode(final Object object)
-	{
-		return getJOM().valueToTree(object);
-	}
-
-	/**
 	 * @param object
 	 * @return
 	 */
-	public static String toPrettyJSON(final Object object)
+	public static String toJSON(final Object object)
 	{
 		try
 		{
@@ -111,14 +108,34 @@ public class JsonUtil
 	}
 
 	/**
-	 * @param stream
+	 * @param profile
+	 * @return
+	 */
+	public static JsonNode toTree(final Object object)
+	{
+		final ObjectMapper om = getJOM();
+		// checkRegistered(om, object.getClass());
+		// return om.valueToTree(object);
+		try
+		{
+			return om.readTree(stringify(object));
+		} catch (final Exception e)
+		{
+			throw ExceptionBuilder.unchecked(e,
+					"Problem serializing " + object.getClass().getSimpleName())
+					.build();
+		}
+	}
+
+	/**
+	 * @param json the {@link InputStream}
 	 * @return
 	 */
 	public static JsonNode valueOf(final InputStream json)
 	{
 		try
 		{
-			return getJOM().readTree(json);
+			return json == null ? null : getJOM().readTree(json);
 		} catch (final Exception e)
 		{
 			throw ExceptionBuilder.unchecked("Problem unmarshalling", e)
@@ -129,15 +146,16 @@ public class JsonUtil
 	/**
 	 * @param json the {@link InputStream}
 	 * @param resultType the type of result {@link Object}
-	 * @return the unmarshalled {@link Object}
+	 * @return the parsed/deserialized/unmarshalled {@link Object}
 	 */
 	public static <T> T valueOf(final InputStream json,
-			final Class<T> resultType, final Map<?, ?>... imports)
+			final Class<T> resultType, final Properties... imports)
 	{
 		try
 		{
-			return (T) getJOM().readValue(json,
-					checkRegistered(resultType, imports));
+			final ObjectMapper om = getJOM();
+			return json == null ? null : (T) om.readValue(json,
+					checkRegistered(om, resultType, imports));
 		} catch (final Exception e)
 		{
 			throw ExceptionBuilder.unchecked(
@@ -147,14 +165,16 @@ public class JsonUtil
 	}
 
 	/**
-	 * @param string
-	 * @return
+	 * @param json the JSON formatted value
+	 * @return the parsed/deserialized/unmarshalled {@link JsonNode} tree
+	 * @see ObjectMapper#readTree(String)
 	 */
 	public static JsonNode valueOf(final String json)
 	{
 		try
 		{
-			return getJOM().readTree(json);
+			return json == null || json.isEmpty() ? null : getJOM().readTree(
+					json);
 		} catch (final Exception e)
 		{
 			throw ExceptionBuilder.unchecked(
@@ -163,17 +183,18 @@ public class JsonUtil
 	}
 
 	/**
-	 * @param json
+	 * @param json the JSON formatted value
 	 * @param resultType the type of result {@link Object}
-	 * @return the unmarshalled {@link Object}
+	 * @return the parsed/deserialized/unmarshalled {@link Object}
 	 */
 	public static <T> T valueOf(final String json, final Class<T> resultType,
-			final Map<?, ?>... imports)
+			final Properties... imports)
 	{
 		try
 		{
-			return (T) getJOM().readValue(json,
-					checkRegistered(resultType, imports));
+			final ObjectMapper om = getJOM();
+			return json == null || json.isEmpty() ? null : (T) om.readValue(
+					json, checkRegistered(om, resultType, imports));
 		} catch (final Exception e)
 		{
 			throw ExceptionBuilder.unchecked(
@@ -182,8 +203,26 @@ public class JsonUtil
 		}
 	}
 
-	/** cache of type arguments for known {@link Identifier} sub-types */
-	public static final Set<Class<?>> JSON_REGISTRATION_CACHE = new HashSet<>();
+	/**
+	 * @param node the partially parsed JSON {@link TreeNode}
+	 * @param resultType the type of result {@link Object}
+	 * @return the parsed/deserialized/unmarshalled {@link Object}
+	 */
+	public static <T> T valueOf(final TreeNode json, Class<T> resultType,
+			final Properties... imports)
+	{
+		try
+		{
+			final ObjectMapper om = getJOM();
+			return json == null ? null : (T) om.treeToValue(json,
+					checkRegistered(om, resultType, imports));
+		} catch (final Exception e)
+		{
+			throw ExceptionBuilder.unchecked(
+					"Problem unmarshalling " + resultType.getName()
+							+ " from JSON: " + json, e).build();
+		}
+	}
 
 	public static class JsonPropertyEditor<E> extends PropertyEditorSupport
 	{
@@ -215,42 +254,73 @@ public class JsonUtil
 	}
 
 	/**
+	 * cache of registered {@link JsonWrapper} or {@link DynaBean} types per
+	 * {@link ObjectMapper}'s {@link #hashCode()}
+	 */
+	public static final Map<ObjectMapper, Set<Class<?>>> JSON_REGISTRATION_CACHE = new WeakHashMap<>();
+
+	/**
 	 * @param type
 	 * @return
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T> Class<T> checkRegistered(final Class<T> type,
-			final Map<?, ?>... imports)
+	public static <T> Class<T> checkRegistered(final ObjectMapper om,
+			final Class<T> type, final Properties... imports)
 	{
-		if (JSON_REGISTRATION_CACHE.contains(type))
+		synchronized (JSON_REGISTRATION_CACHE)
+		{
+			Set<Class<?>> cache = JSON_REGISTRATION_CACHE.get(om);
+			if (cache == null)
+			{
+				cache = new HashSet<>();
+				JSON_REGISTRATION_CACHE.put(om, cache);
+			}
+			if (cache.contains(type))
+				return type;
+
+			// use Class.forName(String) ?
+			// see http://stackoverflow.com/a/9130560
+
+			if (Config.class.isAssignableFrom(type))
+			{
+				// TODO implement dynamic generic Converter(s) for JSON bean
+				// properties ?
+
+				// final Class<?> editorType = new
+				// JsonPropertyEditor<T>().getClass();
+				// PropertyEditorManager.registerEditor(type, editorType);
+				// LOG.trace("Registered " + editorType + " - "
+				// + PropertyEditorManager.findEditor(type));
+			}
+
+			if (Proxy.isProxyClass(type)
+					|| (!type.isPrimitive() && Modifier.isAbstract(type
+							.getModifiers())))
+			{
+				DynaBean.registerType(om, type, imports);
+
+				for (Method method : type.getDeclaredMethods())
+					if (method.getReturnType() != Void.TYPE
+							&& method.getReturnType() != type
+							&& !cache.contains(type))
+					{
+						checkRegistered(om, method.getReturnType(), imports);
+						cache.add(method.getReturnType());
+					}
+
+				// LOG.trace("Registered Dynabean de/serializer for: " + type);
+			} else if (JsonWrapper.class.isAssignableFrom(type))
+				// {
+				JsonWrapper.Util.registerType(om,
+						(Class<? extends JsonWrapper>) type);
+
+			// LOG.trace("Registered Wrapper de/serializer for: " + type);
+			// } else
+			// LOG.trace("Assume default de/serializer for: " + type);
+
+			cache.add(type);
+
 			return type;
-
-		// use Class.forName(String) ?
-		// see http://stackoverflow.com/a/9130560
-
-		if (Config.class.isAssignableFrom(type))
-		{
-			// TODO implement dynamic generic Converter for JSON bean properties
-			// final Class<?> editorType = new
-			// JsonPropertyEditor<T>().getClass();
-			// PropertyEditorManager.registerEditor(type, editorType);
-			// LOG.trace("Registered " + editorType + " - "
-			// + PropertyEditorManager.findEditor(type));
 		}
-
-		if (Modifier.isAbstract(type.getModifiers()))
-		{
-			// LOG.trace("Dynabean JSON de/serializer for type: "+type);
-			DynaBean.registerType(type, imports);
-		} else if (JsonWrapper.class.isAssignableFrom(type))
-		{
-			// LOG.trace("Wrapper JSON de/serializer for type: "+type);
-			JsonWrapper.Util.registerType((Class<? extends JsonWrapper>) type);
-		}
-		// else
-		// LOG.trace("Normal JSON de/serializer for type: "+type);
-
-		JSON_REGISTRATION_CACHE.add(type);
-		return type;
 	}
 }

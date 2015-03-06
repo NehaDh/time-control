@@ -29,9 +29,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLEncoder;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,26 +59,55 @@ public class FileUtil // implements Util
 		// empty
 	}
 
+	/** */
+	private static final String DEFAULT_CHARSET = "UTF-8";
+
 	/**
-	 * @param path
+	 * @param data
 	 * @return
-	 * @throws A4GException
 	 */
-	public static InputStream getFileAsInputStream(final File path)
+	public static String urlEncode(final String data)
 	{
-		return getFileAsInputStream(path.getPath());
+		return urlEncode(data, DEFAULT_CHARSET);
+	}
+
+	/**
+	 * @param data
+	 * @return
+	 */
+	@SuppressWarnings("deprecation")
+	public static String urlEncode(final String data, final String charset)
+	{
+		try
+		{
+			return URLEncoder.encode(data, charset);
+		} catch (final UnsupportedEncodingException e)
+		{
+			LOG.warn("Problem encoding agent id using: " + charset, e);
+			return URLEncoder.encode(data);
+		}
 	}
 
 	/**
 	 * @param path
 	 * @return
-	 * @throws A4GException
+	 * @throws IOException
 	 */
-	public static InputStream getFileAsInputStream(final URI path)
+	public static InputStream toInputStream(final File path) throws IOException
+	{
+		return toInputStream(path.getPath());
+	}
+
+	/**
+	 * @param path
+	 * @return
+	 * @throws IOException
+	 */
+	public static InputStream toInputStream(final URI path) throws IOException
 	{
 		try
 		{
-			return getFileAsInputStream(path.toURL());
+			return toInputStream(path.toURL());
 		} catch (final MalformedURLException e)
 		{
 			throw ExceptionBuilder.unchecked("ILLEGAL: uri " + path, e).build();
@@ -86,11 +117,12 @@ public class FileUtil // implements Util
 	/**
 	 * @param path
 	 * @return
-	 * @throws A4GException
+	 * @throws IOException
 	 */
-	public static InputStream getFileAsInputStream(final URL path)
+	public static InputStream toInputStream(final URL path)
+			throws IOException
 	{
-		return getFileAsInputStream(path.toExternalForm());
+		return toInputStream(path.toExternalForm());
 	}
 
 	/**
@@ -98,9 +130,10 @@ public class FileUtil // implements Util
 	 * 
 	 * @param path an absolute path in the file system or (context) classpath
 	 * @return an {@link InputStream} for the specified {@code path}
-	 * @throws A4GException e.g. if the file was not found
+	 * @throws IOException
 	 */
-	public static InputStream getFileAsInputStream(final String path)
+	public static InputStream toInputStream(final String path)
+			throws IOException
 	{
 		if (path == null)
 			throw ExceptionBuilder.unchecked("NOT SET: path").build();
@@ -108,32 +141,31 @@ public class FileUtil // implements Util
 		final File file = new File(path);
 		if (file.exists())
 		{
-			LOG.debug("Found '" + path + "' at location: "
+			LOG.trace("Found '" + path + "' at location: "
 					+ file.getAbsolutePath());
-			try
-			{
-				// if (path.exists() && path.isFile())
-				return new FileInputStream(file);
 
-			} catch (final FileNotFoundException e)
-			{
-				throw ExceptionBuilder.unchecked(
-						"NOT ALLOWED: " + file.getAbsolutePath(), e).build();
-			}
+			// if (path.exists() && path.isFile())
+			return new FileInputStream(file);
+		}
+
+		final File userFile = new File(System.getProperty("user.dir") + path);
+		if (userFile.exists())
+		{
+			LOG.trace("Found '" + path + "' at location: "
+					+ userFile.getAbsolutePath());
+
+			// if (path.exists() && path.isFile())
+			return new FileInputStream(userFile);
 		}
 
 		try
 		{
 			final URL url = new URL(path);
-			LOG.trace("Downloading '" + path + "'");
+			LOG.trace("Downloading file from " + path);
 			return url.openStream();
 		} catch (final MalformedURLException e)
 		{
 			// ignore
-		} catch (final IOException e)
-		{
-			throw ExceptionBuilder.unchecked("NOT ALLOWED: url " + path, e)
-					.build();
 		}
 
 		final ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -141,12 +173,10 @@ public class FileUtil // implements Util
 		final URL resourcePath = cl.getResource(path);
 		if (resourcePath == null)
 		{
-			throw ExceptionBuilder.unchecked(
-					"NOT ALLOWED: File not found " + path + ", looked in"
-							+ file.getAbsolutePath() + " and classpath")
-					.build();
+			throw new FileNotFoundException("File not found " + path
+					+ ", tried " + file.getAbsolutePath() + " and classpath");
 		}
-		LOG.debug("Found '" + path + "' in classpath: " + resourcePath);
+		LOG.trace("Found '" + path + "' in classpath: " + resourcePath);
 		return cl.getResourceAsStream(path);
 	}
 
@@ -154,16 +184,16 @@ public class FileUtil // implements Util
 	 * @param path
 	 * @return
 	 */
-	public static OutputStream getFileAsOutputStream(final String path)
+	public static OutputStream toOutputStream(final String path)
 	{
-		return getFileAsOutputStream(new File(path), true);
+		return toOutputStream(new File(path), true);
 	}
 
 	/**
 	 * @param path
 	 * @return
 	 */
-	public static OutputStream getFileAsOutputStream(final File file,
+	public static OutputStream toOutputStream(final File file,
 			final boolean append)
 	{
 		if (file == null)

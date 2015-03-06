@@ -20,7 +20,17 @@
  */
 package com.almende.timecontrol.entity;
 
+import io.coala.json.JsonUtil;
+import io.coala.json.dynabean.DynaBean;
+import io.coala.json.dynabean.DynaBean.ComparableProperty;
 import io.coala.refer.Identifier;
+
+import java.util.Properties;
+
+import org.aeonbits.owner.Config;
+
+import com.almende.timecontrol.TimeControl;
+import com.fasterxml.jackson.core.TreeNode;
 
 /**
  * {@link Error} is an extension of the <a
@@ -31,14 +41,16 @@ import io.coala.refer.Identifier;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public interface Error
+@ComparableProperty(TimeControl.ID_KEY)
+public interface Error extends Comparable<Error>, Config
 {
 
-	/** @return the {@link ID} of this {@link Clock} */
+	/** @return the {@link ID} of this {@link Error} */
+	@Key(TimeControl.ID_KEY)
 	ID id();
 
 	/** source of the error, or {@code null} for unknown */
-	Slave.ID source();
+	SlaveConfig.ID source();
 
 	/** JSON-RPC error code, see http://www.jsonrpc.org/specification */
 	Integer code();
@@ -61,8 +73,77 @@ public interface Error
 		/** @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD */
 		public static ID valueOf(final String value)
 		{
-			return Identifier.of(value, ID.class);
+			return Identifier.valueOf(value, ID.class);
 		}
+	}
+
+	/**
+	 * {@link Builder}
+	 * 
+	 * @date $Date$
+	 * @version $Id$
+	 * @author <a href="mailto:rick@almende.org">Rick</a>
+	 */
+	class Builder extends DynaBean.Builder<Error, Builder>
+	{
+
+		/**
+		 * {@link Builder} factory method
+		 * 
+		 * @param json the JSON-formatted {@link String}
+		 * @param imports optional property defaults
+		 * @return the new {@link Builder}
+		 */
+		public static Builder fromJSON(final String json,
+				final Properties... imports)
+		{
+			return fromJSON(JsonUtil.valueOf(json));
+		}
+
+		/**
+		 * {@link Builder} factory method
+		 * 
+		 * @param tree the partially parsed JSON object
+		 * @param imports optional property defaults
+		 * @return the new {@link Builder}
+		 */
+		public static Builder fromJSON(final TreeNode tree,
+				final Properties... imports)
+		{
+			return new Builder(imports).withID(tree.get(TimeControl.ID_KEY));
+		}
+
+		/**
+		 * @param id the JSON-formatted identifier value
+		 * @param imports optional property defaults
+		 * @return the new {@link Builder}
+		 */
+		public static Builder fromID(final String id,
+				final Properties... imports)
+		{
+			return new Builder(imports).withID(ID.valueOf(id));
+		}
+
+		public Builder withID(final TreeNode id)
+		{
+			return withID(JsonUtil.valueOf(id, ID.class));
+		}
+
+		public Builder withID(final ID id)
+		{
+			with(TimeControl.ID_KEY, id);
+			return this;
+		}
+
+		/**
+		 * {@link Builder} constructor, to be extended by a public zero-arg
+		 * constructor in concrete sub-types
+		 */
+		public Builder(final Properties... imports)
+		{
+			super(imports);
+		}
+
 	}
 
 }

@@ -19,6 +19,7 @@
  */
 package io.coala.error;
 
+import io.coala.error.CheckedException.Builder;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
@@ -34,20 +35,52 @@ import rx.subjects.Subject;
  * @version $Id$
  * @author <a href="mailto:Rick@almende.org">Rick</a>
  */
-public abstract class ExceptionBuilder
+public abstract class ExceptionBuilder<THIS extends ExceptionBuilder<THIS>>
 {
 
 	/** */
-//	private static final Scheduler PUBLISH_SCHEDULER = Schedulers.newThread();
+	// private static final Scheduler PUBLISH_SCHEDULER =
+	// Schedulers.newThread();
 
 	/** */
 	private static final Subject<ManagedException, ManagedException> EXCEPTION_PUBLISHER = PublishSubject
 			.create();
 
-	/** zero-arg constructor */
-	protected ExceptionBuilder()
+	/** */
+	protected final ExceptionContext context = new ExceptionContext();
+
+	/** */
+	protected final String message;
+
+	/** */
+	protected final Throwable cause;
+
+	/**
+	 * {@link Builder} constructor
+	 * 
+	 * @param message the detailed description of the {@link CheckedException}
+	 * @param cause the {@link Throwable} causing the new
+	 *            {@link CheckedException}, or {@code null} if none
+	 */
+	protected ExceptionBuilder(final String message, final Throwable cause)
 	{
-		// empty
+		this.message = message;
+		this.cause = cause;
+		with("message", message);
+		with("cause", cause == null ? null : cause.getClass().getName());
+		with("trace", cause == null ? null : cause.getStackTrace());
+	}
+
+	/**
+	 * @param key the context entry key
+	 * @param value the context entry value
+	 * @return this {@link Builder}
+	 */
+	@SuppressWarnings("unchecked")
+	public THIS with(final String key, final Object value)
+	{
+		this.context.set(key, value);
+		return (THIS) this;
 	}
 
 	/**
@@ -58,14 +91,14 @@ public abstract class ExceptionBuilder
 	 */
 	protected <T extends ManagedException> T published(final T e)
 	{
-//		PUBLISH_SCHEDULER.createWorker().schedule(new Action0()
-//		{
-//			@Override
-//			public void call()
-//			{
-//				EXCEPTION_PUBLISHER.onNext(e);
-//			}
-//		});
+		// PUBLISH_SCHEDULER.createWorker().schedule(new Action0()
+		// {
+		// @Override
+		// public void call()
+		// {
+		// EXCEPTION_PUBLISHER.onNext(e);
+		// }
+		// });
 		EXCEPTION_PUBLISHER.onNext(e);
 		return e;
 	}

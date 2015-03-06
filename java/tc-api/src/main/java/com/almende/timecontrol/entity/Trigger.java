@@ -20,13 +20,18 @@
  */
 package com.almende.timecontrol.entity;
 
+import io.coala.json.JsonUtil;
+import io.coala.json.dynabean.DynaBean;
+import io.coala.json.dynabean.DynaBean.ComparableProperty;
 import io.coala.refer.Identifier;
 
-import java.util.List;
+import java.util.Properties;
 
-import org.joda.time.format.ISODateTimeFormat;
+import org.aeonbits.owner.Config;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.almende.timecontrol.TimeControl;
+import com.almende.timecontrol.time.RecurrenceRule;
+import com.fasterxml.jackson.core.TreeNode;
 
 /**
  * {@link Trigger}
@@ -35,86 +40,19 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public interface Trigger
+@ComparableProperty(TimeControl.ID_KEY)
+public interface Trigger extends Comparable<Trigger>, Config
 {
 
 	/** @return the {@link ID} of this {@link Trigger} */
+	@Key(TimeControl.ID_KEY)
 	ID id();
 
 	/**
 	 * @return
 	 */
-	Slave.ID originId();
-
-	/**
-	 * @return
-	 */
-	List<Slave.ID> destinationIds();
-
-	/**
-	 * @return
-	 */
-	RecurrenceExpression when();
-
-	/**
-	 * {@link ExpressionFormat}
-	 * 
-	 * @date $Date$
-	 * @version $Id$
-	 * @author <a href="mailto:rick@almende.org">Rick</a>
-	 */
-	enum ExpressionFormat
-	{
-		/** a (non-recurring) instant in {@link ISODateTimeFormat} */
-		ISO_8601("iso"),
-
-		/** */
-		CRON_RULE("cron"),
-
-		/** */
-		ICAL_RULE("ical"),
-
-		;
-
-		/** */
-		private final String jsonValue;
-
-		/**
-		 * {@link ExpressionFormat} enum constant constructor
-		 * 
-		 * @param jsonValue
-		 */
-		private ExpressionFormat(final String jsonValue)
-		{
-			this.jsonValue = jsonValue;
-		}
-
-		@JsonValue
-		private final String value()
-		{
-			return this.jsonValue;
-		}
-	}
-
-	/**
-	 * {@link RecurrenceExpression}
-	 * 
-	 * @date $Date$
-	 * @version $Id$
-	 * @author <a href="mailto:rick@almende.org">Rick</a>
-	 */
-	interface RecurrenceExpression
-	{
-		/**
-		 * @return
-		 */
-		ExpressionFormat type();
-
-		/**
-		 * @return
-		 */
-		String expression();
-	}
+	@Key(TimeControl.RECURRENCE_KEY)
+	RecurrenceRule recurrence();
 
 	/**
 	 * {@link ID}
@@ -126,9 +64,92 @@ public interface Trigger
 	class ID extends Identifier<String>
 	{
 		/** @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD */
-		public static ID valueOf(final String value)
+		public static ID valueOf(final String json)
 		{
-			return Identifier.of(value, ID.class);
+			return Identifier.valueOf(json, ID.class);
 		}
+	}
+
+	/**
+	 * {@link Builder}
+	 * 
+	 * @date $Date$
+	 * @version $Id$
+	 * @author <a href="mailto:rick@almende.org">Rick</a>
+	 */
+	class Builder extends DynaBean.Builder<Trigger, Builder>
+	{
+
+		/**
+		 * {@link Builder} factory method
+		 * 
+		 * @param json the JSON-formatted {@link String}
+		 * @param imports optional property defaults
+		 * @return the new {@link Builder}
+		 */
+		public static Builder fromJSON(final String json,
+				final Properties... imports)
+		{
+			return fromJSON(JsonUtil.valueOf(json), imports);
+		}
+
+		/**
+		 * {@link Builder} factory method
+		 * 
+		 * @param tree the partially parsed JSON object
+		 * @param imports optional property defaults
+		 * @return the new {@link Builder}
+		 */
+		public static Builder fromJSON(final TreeNode tree,
+				final Properties... imports)
+		{
+			return new Builder(imports).withID(tree.get(TimeControl.ID_KEY))
+					.withRecurrence(tree.get(TimeControl.RECURRENCE_KEY));
+		}
+
+		/**
+		 * @param id the JSON-formatted identifier value
+		 * @param imports optional property defaults
+		 * @return the new {@link Builder}
+		 */
+		public static Builder fromID(final String id,
+				final Properties... imports)
+		{
+			return new Builder(imports).withID(ID.valueOf(id));
+		}
+
+		/**
+		 * {@link Builder} constructor
+		 * 
+		 * @param imports optional property defaults
+		 */
+		public Builder(final Properties... imports)
+		{
+			super(imports);
+		}
+
+		public Builder withID(final TreeNode id)
+		{
+			return withID(JsonUtil.valueOf(id, ID.class));
+		}
+
+		public Builder withID(final ID id)
+		{
+			with(TimeControl.ID_KEY, id);
+			return this;
+		}
+
+		public Builder withRecurrence(final TreeNode recurrence)
+		{
+			return withRecurrence(JsonUtil.valueOf(recurrence,
+					RecurrenceRule.class));
+		}
+
+		public Builder withRecurrence(final RecurrenceRule recurrence)
+		{
+			with(TimeControl.RECURRENCE_KEY, recurrence);
+			return this;
+		}
+
 	}
 }

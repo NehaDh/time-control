@@ -54,7 +54,7 @@ public interface ManagedException
 	/** @see Throwable#printStackTrace(PrintWriter) */
 	void printStackTrace(PrintWriter s);
 
-	/** @return a JSON representation of this {@link ManagedException} */
+	/** @return a JSON representation of this {@linkplain ManagedException} */
 	String toJSON();
 
 	/** @return the {@link ExceptionContext} */

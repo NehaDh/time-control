@@ -154,22 +154,27 @@ public class TypeUtil
 							if (!genericAncestorType.equals(rawIntf))
 								continue;
 
-							// LOG.trace("type params: "
+							// LOG.trace("supertype params: "
 							// + Arrays.asList(superClass
 							// .getTypeParameters())
+							// + ", intf params: "
+							// + Arrays.asList(getClass(rawIntf)
+							// .getTypeParameters())
 							// + ", actual args: "
-							// + Arrays.asList(((ParameterizedType) typeClass
-							// .getGenericSuperclass())
+							// + Arrays.asList(parameterizedIntf
 							// .getActualTypeArguments()));
 
-							return getTypeArguments(superClass,
-									concreteDescendantType);
+							if (superClass.getTypeParameters().length > 0)
+								return getTypeArguments(superClass,
+										concreteDescendantType);
+							// intfType=getClass(rawIntf);
+							type = intf;
 						}
 						superClass = (Class<? super S>) superClass
 								.getSuperclass();
 					}
-					if (intfType == null)
-						type = typeClass.getGenericSuperclass();
+					// if (intfType == null)
+					// type = typeClass.getGenericSuperclass();
 				} else
 					type = typeClass.getGenericSuperclass();
 
@@ -248,19 +253,19 @@ public class TypeUtil
 		}
 
 		// resolve types by chasing down type variables.
-		final List<Class<?>> parentTypeArguments = new ArrayList<Class<?>>();
+		final List<Class<?>> result = new ArrayList<Class<?>>();
 		for (Type baseType : actualTypeArguments)
 		{
 			while (resolvedTypes.containsKey(baseType))
 				baseType = resolvedTypes.get(baseType);
 
-			parentTypeArguments.add(getClass(baseType));
+			result.add(getClass(baseType));
 		}
 		// LOG.trace(String.format(
 		// "Got child %s's type arguments for %s: %s",
 		// childClass.getName(), parentClass.getSimpleName(),
 		// parentTypeArguments));
-		return parentTypeArguments;
+		return result;
 	}
 
 	public static <T> List<Class<?>> getTypeArguments(
@@ -280,6 +285,18 @@ public class TypeUtil
 	}
 
 	public static final Map<Class<?>, Provider<?>> BEAN_PROVIDER_CACHE = new WeakHashMap<>();
+
+	/**
+	 * @param beanType should be a non-abstract concrete {@link Class} that has
+	 *            a public zero-arg constructor
+	 * @return the new {@link Provider} instance
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T, S extends T> Provider<T> createBeanProvider(
+			final Class<T> apiType, final Class<S> beanType)
+	{
+		return (Provider<T>) createBeanProvider(beanType, BEAN_PROVIDER_CACHE);
+	}
 
 	/**
 	 * @param beanType should be a non-abstract concrete {@link Class} that has
