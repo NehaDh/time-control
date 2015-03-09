@@ -63,16 +63,16 @@ public interface EveAgentConfig extends ParentConfig
 	String AGENT_ID_DEFAULT = "time-control";
 
 	/** */
-	String AGENT_CONFIG_FILE_KEY = "master.agent.config-uri";
+	String AGENT_CONFIG_FILE_KEY = "agent.config-uri";
 
 	/** */
-	String AGENT_CONFIG_FILE_DEFAULT = "time-control-master.yaml";
+	String AGENT_CONFIG_FILE_DEFAULT = "time-control-eve.yaml";
 
 	/** */
 	String AGENT_CLASS_KEY = "master.agent.class";
 
 	/** */
-	// Class<?> AGENT_CLASS_DEFAULT = TimerAgent.class;
+	Class<?> AGENT_CLASS_DEFAULT = Agent.class;
 
 	/** */
 	String STATE_CLASS_KEY = "master.state.class";
@@ -118,7 +118,7 @@ public interface EveAgentConfig extends ParentConfig
 	 */
 	@SuppressWarnings("unchecked")
 	Map<String, String> DEFAULT_VALUES = map(
-			// entry(AGENT_CLASS_KEY, AGENT_CLASS_DEFAULT.getName()),
+			//entry(AGENT_CLASS_KEY, AGENT_CLASS_DEFAULT.getName()),
 			entry(STATE_CLASS_KEY, STATE_CLASS_DEFAULT.getName()),
 			entry(SCHEDULER_CLASS_KEY, SCHEDULER_CLASS_DEFAULT.getName()),
 			entry(TRANSPORT_CLASS_KEY, TRANSPORT_CLASS_DEFAULT.getName()));
@@ -164,14 +164,15 @@ public interface EveAgentConfig extends ParentConfig
 	boolean transportAuthenticate();
 
 	@Key(TRANSPORT_CONFIG_KEY)
-	@DefaultValue("{\"class\":\"${"
-			+ TRANSPORT_CLASS_KEY
+	@DefaultValue("{\"class\":\"${" + TRANSPORT_CLASS_KEY
 			+ "}\",\"servletUrl\":\"${"
 			+ TRANSPORT_SERVLET_URL_KEY
 			+ "}\",\"doAuthentication\":${"
 			+ TRANSPORT_AUTHENTICATE_KEY
 			+ "},\"doShortcut\":true,"
 			+ "\"servletLauncher\":\"JettyLauncher\","
+			// \"initParams\":[{\"key\":\"servletUrl\",\"value\":\"${" +
+			// TRANSPORT_SERVLET_URL_KEY + "}\"}],"
 			+ "\"servletClass\":\"com.almende.eve.transport.http.DebugServlet\"}")
 	@ConverterClass(JsonNodeConverter.class)
 	JsonNode transportConfig();

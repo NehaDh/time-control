@@ -22,7 +22,7 @@ package com.almende.timecontrol.entity;
 
 import io.coala.json.JsonUtil;
 import io.coala.json.dynabean.DynaBean;
-import io.coala.json.dynabean.DynaBean.ComparableProperty;
+import io.coala.json.dynabean.DynaBean.BeanWrapper;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,7 +43,7 @@ import com.fasterxml.jackson.core.TreeNode;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-@ComparableProperty(TimeControl.SLAVE_KEY)
+@BeanWrapper(comparableOn = TimeControl.SLAVE_KEY)
 public interface SlaveStatus extends Comparable<SlaveStatus>, Config
 {
 

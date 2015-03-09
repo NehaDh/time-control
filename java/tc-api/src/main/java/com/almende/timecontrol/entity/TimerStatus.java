@@ -22,7 +22,7 @@ package com.almende.timecontrol.entity;
 
 import io.coala.json.JsonUtil;
 import io.coala.json.dynabean.DynaBean;
-import io.coala.json.dynabean.DynaBean.ComparableProperty;
+import io.coala.json.dynabean.DynaBean.BeanWrapper;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -45,7 +45,7 @@ import com.fasterxml.jackson.core.TreeNode;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-@ComparableProperty(TimeControl.TIMER_KEY)
+@BeanWrapper(comparableOn = TimeControl.TIMER_KEY)
 public interface TimerStatus extends Comparable<TimerStatus>, Config
 {
 

@@ -1,11 +1,8 @@
 package com.almende.timecontrol.eve;
 
 import static org.aeonbits.owner.util.Collections.entry;
-import static org.aeonbits.owner.util.Collections.map;
 import io.coala.json.JsonUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -14,17 +11,12 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.aeonbits.owner.ConfigFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.almende.eve.agent.Agent;
-import com.almende.eve.agent.AgentBuilder;
-import com.almende.eve.agent.AgentConfig;
-import com.almende.eve.capabilities.Config;
-import com.almende.eve.config.YamlReader;
-import com.almende.timecontrol.api.eve.EveAgentConfig;
 import com.almende.timecontrol.api.eve.EveTimerAPI;
+import com.almende.timecontrol.api.eve.EveUtil;
 import com.almende.timecontrol.entity.ClockConfig;
 import com.almende.timecontrol.entity.Job;
 import com.almende.timecontrol.entity.SlaveConfig;
@@ -33,7 +25,6 @@ import com.almende.timecontrol.entity.TimerConfig;
 import com.almende.timecontrol.entity.TimerStatus;
 import com.almende.timecontrol.entity.Trigger;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
@@ -72,9 +63,9 @@ public class TimerAgent extends Agent implements EveTimerAPI
 			.synchronizedSortedMap(new TreeMap<SlaveConfig.ID, SortedMap<Trigger.ID, Job>>());
 
 	@Override
-	protected void loadConfig(final boolean onBoot)
+	public void init(final ObjectNode params, final boolean onBoot)
 	{
-		super.loadConfig(onBoot);
+		super.init(params, onBoot);
 
 		this.config = TimerConfig.Builder.forID(getId()).build();
 	}
@@ -124,22 +115,23 @@ public class TimerAgent extends Agent implements EveTimerAPI
 	{
 		final TimerConfig current = this.config;
 
-		if (!equals(current.duration(), config.duration()))
+		if (current == null || !equals(current.duration(), config.duration()))
 		{
 			// TODO apply changes
 		}
 
-		if (!equals(current.resolution(), config.resolution()))
+		if (current == null
+				|| !equals(current.resolution(), config.resolution()))
 		{
 			// TODO apply changes
 		}
 
-		if (!equals(current.clock(), config.clock()))
+		if (current == null || !equals(current.clock(), config.clock()))
 		{
 			// TODO apply changes
 		}
 
-		if (!equals(current.offset(), config.offset()))
+		if (current == null || !equals(current.offset(), config.offset()))
 		{
 			// TODO apply changes
 		}
@@ -206,53 +198,7 @@ public class TimerAgent extends Agent implements EveTimerAPI
 	public static TimerAgent valueOf(final String id,
 			final Map.Entry<String, ? extends JsonNode>... parameters)
 	{
-		@SuppressWarnings("unchecked")
-		final EveAgentConfig cfg = ConfigFactory.create(
-				EveAgentConfig.class,
-				EveAgentConfig.DEFAULT_VALUES,
-				map(entry(EveAgentConfig.AGENT_CLASS_KEY,
-						TimerAgent.class.getName())));
-
-		final InputStream is = cfg.agentConfigStream();
-		if (is != null)
-		{
-			final Config config = YamlReader.load(is).expand();
-			try
-			{
-				is.close();
-			} catch (final IOException ignore)
-			{
-				// empty
-			}
-
-			for (final JsonNode agent : (ArrayNode) config.get("agents"))
-			{
-				final AgentConfig agentConfig = new AgentConfig(
-						(ObjectNode) agent);
-				if (parameters != null && parameters.length != 0)
-					for (Map.Entry<String, ? extends JsonNode> param : parameters)
-						agentConfig.set(param.getKey(), param.getValue());
-
-				final JsonNode idNode = agent.get("id");
-				if (idNode != null && !idNode.asText().equals(id))
-					continue;
-
-				final Agent result = new AgentBuilder().with(agentConfig)
-						.build();
-				LOG.info("Created agent {} from config at {}: {}", id,
-						cfg.agentConfigUri(), agentConfig);
-				return (TimerAgent) result;
-			}
-		}
-
-		LOG.info("Using default config for timer agent: {}", id);
-		final AgentConfig agentConfig = cfg.agentConfig();
-		if (parameters != null && parameters.length != 0)
-			for (Map.Entry<String, ? extends JsonNode> param : parameters)
-				agentConfig.set(param.getKey(), param.getValue());
-		final Agent result = new AgentBuilder().with(agentConfig).build();
-		LOG.trace("Created agent {} from default config: {}", id, agentConfig);
-		return (TimerAgent) result;
+		return EveUtil.valueOf(id, TimerAgent.class, parameters);
 	}
 
 	/** */

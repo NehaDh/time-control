@@ -126,8 +126,8 @@ public class DynaBeanInvocationHandler implements InvocationHandler
 			if (beanProp.equals("equals"))
 				return this.bean.equals(args[0]);
 
-			final DynaBean.ComparableProperty comparable = this.type
-					.getAnnotation(DynaBean.ComparableProperty.class);
+			final DynaBean.BeanWrapper comparable = this.type
+					.getAnnotation(DynaBean.BeanWrapper.class);
 			if (beanProp.equals("compareTo") && comparable != null)
 				return DynaBean.getComparator(comparable).compare(
 						(Comparable) this.bean, (Comparable) args[0]);

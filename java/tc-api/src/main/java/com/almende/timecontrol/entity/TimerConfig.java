@@ -40,7 +40,7 @@ import com.fasterxml.jackson.core.TreeNode;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-@DynaBean.ComparableProperty(TimeControl.ID_KEY)
+@DynaBean.BeanWrapper(comparableOn = TimeControl.ID_KEY)
 public interface TimerConfig extends Comparable<TimerConfig>, Config
 {
 

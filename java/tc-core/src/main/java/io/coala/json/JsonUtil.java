@@ -21,6 +21,7 @@ package io.coala.json;
 
 import io.coala.error.ExceptionBuilder;
 import io.coala.json.dynabean.DynaBean;
+import io.coala.json.dynabean.DynaBean.BeanWrapper;
 import io.coala.type.TypeUtil;
 
 import java.beans.PropertyEditorSupport;
@@ -294,8 +295,7 @@ public class JsonUtil
 			}
 
 			if (Proxy.isProxyClass(type)
-					|| (!type.isPrimitive() && Modifier.isAbstract(type
-							.getModifiers())))
+					|| type.isAnnotationPresent(BeanWrapper.class))
 			{
 				DynaBean.registerType(om, type, imports);
 

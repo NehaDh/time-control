@@ -12,7 +12,7 @@
 	<artifactId>tc-api-eve</artifactId>
 
 	<properties>
-		<eve.version>3.0.0</eve.version>
+		<eve.version>3.1.0</eve.version>
 		<jetty.version>9.2.9.v20150224</jetty.version>
 	</properties>
 
@@ -35,18 +35,21 @@
 			<dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-servlet</artifactId> 
 			<version>${jetty.version}</version> </dependency> -->
 
-		<!-- <dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-webapp</artifactId> 
-			<version>${jetty.version}</version> </dependency> <dependency> <groupId>org.eclipse.jetty.websocket</groupId> 
-			<artifactId>javax-websocket-server-impl</artifactId> <version>${jetty.version}</version> 
-			</dependency> -->
+		<dependency>
+			<groupId>org.eclipse.jetty.websocket</groupId>
+			<artifactId>javax-websocket-server-impl</artifactId>
+			<version>${jetty.version}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>com.almende.eve</groupId>
 			<artifactId>eve-transport-http-jetty</artifactId>
 			<version>${eve.version}</version>
 			<exclusions>
-				<!-- <exclusion> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-maven-plugin</artifactId> 
-					</exclusion> -->
+				<exclusion>
+					<groupId>org.eclipse.jetty</groupId>
+					<artifactId>jetty-maven-plugin</artifactId>
+				</exclusion>
 				<exclusion>
 					<groupId>com.fasterxml.jackson.core</groupId>
 					<artifactId>jackson-databind</artifactId>

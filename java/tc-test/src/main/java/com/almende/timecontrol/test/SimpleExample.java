@@ -60,7 +60,7 @@ public class SimpleExample
 
 		LOG.info("Connecting slave with config: {}", slaveConfig);
 		final SlaveAgent slave = SlaveAgent.getInstance(slaveConfig);
-
+		slave.initOnce();
 		final TimerStatus status = slave.getStatus();
 		LOG.info("Connected to master, got status: {}", status);
 	}

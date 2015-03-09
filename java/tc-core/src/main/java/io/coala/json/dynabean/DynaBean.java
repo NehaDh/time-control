@@ -186,8 +186,7 @@ public class DynaBean implements Cloneable
 	{
 		final Map<String, Object> values = any();
 		final DynaBean result = new DynaBean();
-		result.set(JsonUtil.valueOf(JsonUtil.toTree(values),
-				values.getClass()));
+		result.set(JsonUtil.valueOf(JsonUtil.toTree(values), values.getClass()));
 		return result;
 	}
 
@@ -236,9 +235,10 @@ public class DynaBean implements Cloneable
 	public static <T> T valueOf(final Class<T> type, final DynaBean bean,
 			final Properties... imports)
 	{
-		// if (!type.isInterface())
-		// throw ExceptionBuilder.unchecked(
-		// "Type is not an interface: " + type.getName()).build();
+		if (!type.isAnnotationPresent(BeanWrapper.class))
+			throw ExceptionBuilder.unchecked(
+					"Type is not a @" + BeanWrapper.class.getSimpleName())
+					.build();
 
 		return (T) Proxy.newProxyInstance(type.getClassLoader(),
 				new Class[] { type }, new DynaBeanInvocationHandler(type, bean,
@@ -261,18 +261,26 @@ public class DynaBean implements Cloneable
 					final SerializerProvider serializers) throws IOException,
 					JsonProcessingException
 			{
-				final boolean isProxy = Proxy.isProxyClass(value.getClass());
-				final Object vvalue = isProxy ? ((DynaBeanInvocationHandler) Proxy
-						.getInvocationHandler(value)).bean : value;
-				// LOG.trace("Finding de/serializer for " + vvalue.getClass());
-				serializers.findValueSerializer(vvalue.getClass()).serialize(
-						vvalue, jgen, serializers);
+				if (Proxy.isProxyClass(value.getClass()))
+				{
+					final DynaBeanInvocationHandler handler = (DynaBeanInvocationHandler) Proxy
+							.getInvocationHandler(value);
+					// LOG.trace("Finding serializer for " +
+					// handler.bean.getClass());
+					serializers.findValueSerializer(handler.bean.getClass())
+							.serialize(handler.bean, jgen, serializers);
+				} else
+				{
+					// LOG.trace("Finding serializer for " + value.getClass());
+					serializers.findValueSerializer(value.getClass())
+							.serialize(value, jgen, serializers);
+				}
 			}
 		};
 	}
 
 	/** */
-	public static <T> void registerType(final ObjectMapper om, 
+	public static <T> void registerType(final ObjectMapper om,
 			final Class<T> type, final Properties... imports)
 	{
 		om.registerModule(new SimpleModule().addSerializer(type,
@@ -381,27 +389,29 @@ public class DynaBean implements Cloneable
 	@Documented
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.TYPE)
-	public @interface ComparableProperty
+	public @interface BeanWrapper
 	{
 		/**
 		 * @return
 		 */
-		String value();
+		String comparableOn() default "";
 	}
 
 	/** */
-	private static final Map<ComparableProperty, Comparator<?>> COMPARATOR_CACHE = new TreeMap<>();
+	private static final Map<BeanWrapper, Comparator<?>> COMPARATOR_CACHE = new TreeMap<>();
 
 	/**
-	 * @param annot the {@link ComparableProperty} instance for the type of
-	 *            wrapper of {@link DynaBean}s containing the {@link Comparable}
-	 *            value type in the annotated property key
+	 * @param annot the {@link BeanWrapper} instance for the type of wrapper of
+	 *            {@link DynaBean}s containing the {@link Comparable} value type
+	 *            in the annotated property key
 	 * @return a (cached) comparator
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <S extends Comparable> Comparator<S> getComparator(
-			final ComparableProperty annot)
+			final BeanWrapper annot)
 	{
+		if (annot.comparableOn().isEmpty())
+			return null;
 		synchronized (COMPARATOR_CACHE)
 		{
 			Comparator<S> result = (Comparator<S>) COMPARATOR_CACHE.get(annot);
@@ -414,10 +424,10 @@ public class DynaBean implements Cloneable
 					{
 						final S key1 = (S) ((DynaBeanInvocationHandler) Proxy
 								.getInvocationHandler(o1)).bean.any().get(
-								annot.value());
+								annot.comparableOn());
 						final S key2 = (S) ((DynaBeanInvocationHandler) Proxy
 								.getInvocationHandler(o2)).bean.any().get(
-								annot.value());
+								annot.comparableOn());
 						return key1.compareTo(key2);
 					}
 				};

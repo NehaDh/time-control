@@ -18,7 +18,9 @@
  */
 package com.almende.timecontrol.api.eve;
 
-import com.almende.eve.transform.rpc.annotation.Name;
+import com.almende.eve.protocol.jsonrpc.annotation.Access;
+import com.almende.eve.protocol.jsonrpc.annotation.AccessType;
+import com.almende.eve.protocol.jsonrpc.annotation.Name;
 import com.almende.timecontrol.api.SlaveAPI;
 import com.almende.timecontrol.entity.ClockConfig;
 import com.almende.timecontrol.entity.Job;
@@ -34,9 +36,11 @@ public interface EveTimedAPI extends SlaveAPI
 {
 
 	@Override
+	@Access(AccessType.PUBLIC)
 	void notify(@Name("clock") ClockConfig clock);
 
 	@Override
+	@Access(AccessType.PUBLIC)
 	void notify(@Name("job") Job job);
 
 }

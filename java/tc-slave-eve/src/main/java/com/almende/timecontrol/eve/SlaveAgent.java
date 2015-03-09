@@ -21,16 +21,12 @@
 package com.almende.timecontrol.eve;
 
 import static org.aeonbits.owner.util.Collections.entry;
-import static org.aeonbits.owner.util.Collections.map;
 import io.coala.json.JsonUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.aeonbits.owner.ConfigFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,15 +35,11 @@ import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
 import com.almende.eve.agent.Agent;
-import com.almende.eve.agent.AgentBuilder;
-import com.almende.eve.agent.AgentConfig;
 import com.almende.eve.agent.AgentProxyFactory;
-import com.almende.eve.capabilities.Config;
-import com.almende.eve.config.YamlReader;
 import com.almende.timecontrol.api.TimerAPI;
-import com.almende.timecontrol.api.eve.EveAgentConfig;
 import com.almende.timecontrol.api.eve.EveTimedAPI;
 import com.almende.timecontrol.api.eve.EveTimerAPI;
+import com.almende.timecontrol.api.eve.EveUtil;
 import com.almende.timecontrol.entity.ClockConfig;
 import com.almende.timecontrol.entity.Job;
 import com.almende.timecontrol.entity.SlaveConfig;
@@ -56,8 +48,6 @@ import com.almende.timecontrol.entity.TimerConfig;
 import com.almende.timecontrol.entity.TimerStatus;
 import com.almende.timecontrol.entity.Trigger;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * {@link SlaveAgent}
@@ -92,10 +82,15 @@ public class SlaveAgent extends Agent implements EveTimedAPI, EveTimerAPI
 	/** */
 	private EveTimerAPI masterProxy;
 
-	@Override
-	protected void loadConfig(final boolean onBoot)
+	private boolean initialized = false;
+
+	/**
+	 * @return
+	 */
+	public void initOnce()
 	{
-		super.loadConfig(onBoot);
+		if (this.initialized)
+			return;
 
 		final SlaveConfig config = SlaveConfig.Builder.fromJSON(
 				getConfig().get(SLAVE_CONFIG_KEY)).build();
@@ -103,6 +98,12 @@ public class SlaveAgent extends Agent implements EveTimedAPI, EveTimerAPI
 		this.status = SlaveStatus.Builder.forSlave(config).build();
 
 		LOG.trace("Initialized! Status: " + this.status);
+	}
+
+	@Override
+	protected void onBoot()
+	{
+		initOnce();
 	}
 
 	/**
@@ -230,53 +231,7 @@ public class SlaveAgent extends Agent implements EveTimedAPI, EveTimerAPI
 	public static final SlaveAgent valueOf(final String id,
 			final Map.Entry<String, ? extends JsonNode>... parameters)
 	{
-		@SuppressWarnings("unchecked")
-		final EveAgentConfig cfg = ConfigFactory.create(
-				EveAgentConfig.class,
-				EveAgentConfig.DEFAULT_VALUES,
-				map(entry(EveAgentConfig.AGENT_CLASS_KEY,
-						SlaveAgent.class.getName())));
-
-		final InputStream is = cfg.agentConfigStream();
-		if (is != null)
-		{
-			final Config config = YamlReader.load(is).expand();
-			try
-			{
-				is.close();
-			} catch (final IOException ignore)
-			{
-				// empty
-			}
-
-			for (final JsonNode agent : (ArrayNode) config.get("agents"))
-			{
-				final AgentConfig agentConfig = new AgentConfig(
-						(ObjectNode) agent);
-				if (parameters != null && parameters.length != 0)
-					for (Map.Entry<String, ? extends JsonNode> param : parameters)
-						agentConfig.set(param.getKey(), param.getValue());
-
-				final JsonNode idNode = agent.get("id");
-				if (idNode != null && !idNode.asText().equals(id))
-					continue;
-
-				final Agent result = new AgentBuilder().with(agentConfig)
-						.build();
-				LOG.info("Created agent {} from config at {}: {}", id,
-						cfg.agentConfigUri(), agentConfig);
-				return (SlaveAgent) result;
-			}
-		}
-
-		LOG.info("Using default config for agent: " + id);
-		final AgentConfig agentConfig = cfg.agentConfig();
-		if (parameters != null && parameters.length != 0)
-			for (Map.Entry<String, ? extends JsonNode> param : parameters)
-				agentConfig.set(param.getKey(), param.getValue());
-		final Agent result = new AgentBuilder().with(agentConfig).build();
-		LOG.trace("Created agent {} from default config: {}", id, agentConfig);
-		return (SlaveAgent) result;
+		return EveUtil.valueOf(id, SlaveAgent.class, parameters);
 	}
 
 	/** */
