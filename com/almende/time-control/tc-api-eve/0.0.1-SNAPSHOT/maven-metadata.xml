@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>com.almende.time-control</groupId>
+  <artifactId>tc-api-eve</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <versioning>
+    <snapshot>
+      <timestamp>20150313.120022</timestamp>
+      <buildNumber>1</buildNumber>
+    </snapshot>
+    <lastUpdated>20150313120022</lastUpdated>
+    <snapshotVersions>
+      <snapshotVersion>
+        <extension>jar</extension>
+        <value>0.0.1-20150313.120022-1</value>
+        <updated>20150313120022</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>0.0.1-20150313.120022-1</value>
+        <updated>20150313120022</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+</metadata>
