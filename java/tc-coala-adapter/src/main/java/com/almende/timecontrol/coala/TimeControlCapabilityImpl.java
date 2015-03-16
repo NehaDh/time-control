@@ -29,16 +29,16 @@ import io.coala.capability.replicate.ReplicatingCapability;
 import io.coala.capability.replicate.ReplicationConfig;
 import io.coala.config.CoalaProperty;
 import io.coala.error.ExceptionBuilder;
+import io.coala.log.InjectLogger;
 import io.coala.model.ModelComponent;
 import io.coala.process.Job;
 import io.coala.random.RandomNumberStream;
 import io.coala.random.RandomNumberStreamID;
 import io.coala.time.ClockID;
 import io.coala.time.SimTime;
+import io.coala.time.SimTimeFactory;
 import io.coala.time.TimeUnit;
 
-import java.net.URLClassLoader;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,14 +47,15 @@ import java.util.TreeMap;
 
 import javax.inject.Inject;
 
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import rx.Observable;
+import rx.Observer;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
+import com.almende.timecontrol.entity.ClockConfig;
 import com.almende.timecontrol.entity.SlaveConfig;
 import com.almende.timecontrol.entity.TimerConfig;
 import com.almende.timecontrol.entity.Trigger;
@@ -78,10 +79,20 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 	private static final long serialVersionUID = 1L;
 
 	/** */
+	@InjectLogger
+	private Logger LOG;
+
+	/** */
 	private final SlaveAgent slave;
 
 	/** */
 	private final ReplicationConfig config;
+
+	/** */
+	private final SimTimeFactory newTime;
+
+	/** */
+	private final TimeUnit baseTimeUnit;
 
 	/** */
 	private final Subject<ClockStatusUpdate, ClockStatusUpdate> statusUpdates = PublishSubject
@@ -93,10 +104,6 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 
 	/** */
 	private volatile SimTime time;
-	
-	/** */
-	private static final Logger LOG = LogManager
-			.getLogger(TimeControlCapabilityImpl.class);
 
 	/**
 	 * {@link TimeControlCapabilityImpl} constructor
@@ -108,6 +115,8 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 	{
 		super(binder);
 		this.config = getBinder().inject(ReplicationConfig.class);
+		this.newTime = this.config.newTime();
+		this.baseTimeUnit = this.config.getBaseTimeUnit();
 		final SlaveConfig slaveConfig = SlaveConfig.Builder
 				.forID(getID().getOwnerID().getValue())
 				.withTimerId(
@@ -116,9 +125,30 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 				// TODO set slave values
 				.build();
 
-		LOG.trace("class path: "+Arrays.asList(
-		((URLClassLoader)Thread.currentThread().getContextClassLoader()).getURLs()).toString().replace(", ", ",\r\n"));
 		this.slave = SlaveAgent.getInstance(slaveConfig);
+		this.slave.time().subscribe(new Observer<ClockConfig>()
+		{
+
+			@Override
+			public void onCompleted()
+			{
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public void onError(final Throwable e)
+			{
+				LOG.error("Problem reading clock status", e);
+			}
+
+			@Override
+			public void onNext(final ClockConfig t)
+			{
+				setTime(newTime.create(t.time().nanos(), TimeUnit.NANOS)
+						.toUnit(baseTimeUnit));
+			}
+		});
 	}
 
 	/** */

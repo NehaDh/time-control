@@ -33,6 +33,14 @@
 
 	<dependencies>
 		<dependency>
+			<!-- Java Extension API for dependency injection (and/or aspect oriented 
+				programming) -->
+			<groupId>javax.inject</groupId>
+			<artifactId>javax.inject</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		
+		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tc-api-eve</artifactId>
 			<version>${project.version}</version>
