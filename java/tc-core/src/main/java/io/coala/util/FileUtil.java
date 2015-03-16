@@ -18,7 +18,7 @@
  *
  * Copyright © 2010-2013 Almende B.V.
  */
-package io.coala.resource;
+package io.coala.util;
 
 import io.coala.error.ExceptionBuilder;
 

@@ -15,6 +15,23 @@
 		<eve.version>3.1.0</eve.version>
 		<jetty.version>9.2.9.v20150224</jetty.version>
 	</properties>
+	
+	<repositories>
+		<!-- Time-control public Maven repository -->
+		<repository>
+			<name>Time Control Public Maven Repository</name>
+			<id>tc-public</id>
+			<url>https://github.com/almende/time-control/raw/mvn-repo/</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
 
 	<dependencies>
 

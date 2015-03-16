@@ -21,7 +21,7 @@
 package com.almende.timecontrol.time;
 
 import io.coala.error.ExceptionBuilder;
-import io.coala.json.JsonUtil;
+import io.coala.util.JsonUtil;
 
 import java.util.Date;
 import java.util.Iterator;

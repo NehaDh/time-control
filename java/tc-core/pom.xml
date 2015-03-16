@@ -23,7 +23,22 @@
 		<log4j-slf4j-impl.version>2.0-beta4</log4j-slf4j-impl.version>
 	</properties>
 
+	
 	<repositories>
+		<!-- Time-control public Maven repository -->
+		<repository>
+			<name>Time Control Public Maven Repository</name>
+			<id>tc-public</id>
+			<url>https://github.com/almende/time-control/raw/mvn-repo/</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
 		<repository>
 			<id>eaio.com</id>
 			<url>http://eaio.com/maven2</url>

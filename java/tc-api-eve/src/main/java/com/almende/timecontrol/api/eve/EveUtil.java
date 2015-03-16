@@ -22,22 +22,25 @@ package com.almende.timecontrol.api.eve;
 
 import static org.aeonbits.owner.util.Collections.entry;
 import static org.aeonbits.owner.util.Collections.map;
-import io.coala.json.JsonUtil;
+import io.coala.util.JsonUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
 
 import org.aeonbits.owner.ConfigFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jetty.server.Server;
 
 import com.almende.eve.agent.Agent;
 import com.almende.eve.agent.AgentBuilder;
 import com.almende.eve.agent.AgentConfig;
 import com.almende.eve.capabilities.Config;
 import com.almende.eve.config.YamlReader;
+import com.almende.eve.transport.http.embed.JettyLauncher;
 import com.almende.util.jackson.JOM;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -134,6 +137,21 @@ public class EveUtil
 		LOG.info("No config found at {} for agent: {}. "
 				+ "Using default config", cfg.agentConfigUri(), id);
 		return valueOf(cfg.agentConfig(), agentType, parameters);
+	}
+
+	public static void stop() throws Exception
+	{
+		// LOG.trace("Stopping Jetty server...");
+		final Field field = JettyLauncher.class.getDeclaredField("server");
+		field.setAccessible(true);
+		((Server) field.get(null)).stop();
+		// LOG.trace("Stopped Jetty server");
+
+		// LOG.trace("Stopping RunQueue server...");
+		// final RunQueue pool = (RunQueue) ThreadPool.getPool();
+		// pool.shutdownNow();
+		// //pool.awaitTermination(1, TimeUnit.MILLISECONDS);
+		// LOG.trace("Stopped RunQueue");
 	}
 
 }

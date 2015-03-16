@@ -20,10 +20,10 @@
  */
 package com.almende.timecontrol.entity;
 
-import io.coala.json.JsonUtil;
+import io.coala.id.Identifier;
 import io.coala.json.dynabean.DynaBean;
 import io.coala.json.dynabean.DynaBean.BeanWrapper;
-import io.coala.refer.Identifier;
+import io.coala.util.JsonUtil;
 
 import java.util.Properties;
 

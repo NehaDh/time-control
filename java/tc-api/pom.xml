@@ -19,6 +19,23 @@
 		<threetenbp.version>1.2</threetenbp.version>
 		<threeten-extra.version>0.9</threeten-extra.version>
 	</properties>
+	
+	<repositories>
+		<!-- Time-control public Maven repository -->
+		<repository>
+			<name>Time Control Public Maven Repository</name>
+			<id>tc-public</id>
+			<url>https://github.com/almende/time-control/raw/mvn-repo/</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
 
 	<dependencies>
 

@@ -19,7 +19,7 @@ package com.almende.timecontrol.bean;
 
 import io.coala.error.ExceptionBuilder;
 import io.coala.error.ManagedException;
-import io.coala.json.JsonUtil;
+import io.coala.util.JsonUtil;
 
 import java.util.Properties;
 

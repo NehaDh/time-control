@@ -21,8 +21,8 @@
 package io.coala.json.dynabean;
 
 import io.coala.error.ExceptionBuilder;
-import io.coala.json.JsonUtil;
-import io.coala.refer.Identifier;
+import io.coala.id.Identifier;
+import io.coala.util.JsonUtil;
 
 import java.io.IOException;
 import java.lang.annotation.Documented;
@@ -267,6 +267,7 @@ public class DynaBean implements Cloneable
 							.getInvocationHandler(value);
 					// LOG.trace("Finding serializer for " +
 					// handler.bean.getClass());
+					// FIXME Jackson 2.4.0 ?
 					serializers.findValueSerializer(handler.bean.getClass())
 							.serialize(handler.bean, jgen, serializers);
 				} else
@@ -283,6 +284,18 @@ public class DynaBean implements Cloneable
 	public static <T> void registerType(final ObjectMapper om,
 			final Class<T> type, final Properties... imports)
 	{
+		// TODO implement dynamic generic Converter(s) for JSON bean
+		// properties ?
+
+		// if (Config.class.isAssignableFrom(type))
+		// {
+		// final Class<?> editorType = new
+		// JsonPropertyEditor<T>().getClass();
+		// PropertyEditorManager.registerEditor(type, editorType);
+		// LOG.trace("Registered " + editorType + " - "
+		// + PropertyEditorManager.findEditor(type));
+		// }
+
 		om.registerModule(new SimpleModule().addSerializer(type,
 				createJsonSerializer(type)).addDeserializer(type,
 				createJsonDeserializer(om, type, imports)));
@@ -506,11 +519,20 @@ public class DynaBean implements Cloneable
 		}
 
 		/**
-		 * @return
+		 * @return this Builder with the immutable bean
+		 */
+		@SuppressWarnings("unchecked")
+		public THIS lock()
+		{
+			this.bean.lock();
+			return (THIS) this;
+		}
+
+		/**
+		 * @return the provided instance of <T>
 		 */
 		public T build()
 		{
-			this.bean.lock();
 			return get();
 		}
 	}

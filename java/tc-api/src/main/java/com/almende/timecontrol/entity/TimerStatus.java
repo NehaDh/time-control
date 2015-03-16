@@ -20,9 +20,9 @@
  */
 package com.almende.timecontrol.entity;
 
-import io.coala.json.JsonUtil;
 import io.coala.json.dynabean.DynaBean;
 import io.coala.json.dynabean.DynaBean.BeanWrapper;
+import io.coala.util.JsonUtil;
 
 import java.net.URI;
 import java.util.Arrays;

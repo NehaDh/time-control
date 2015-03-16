@@ -18,10 +18,10 @@
  * 
  * Copyright (c) 2014 Almende B.V. 
  */
-package io.coala.refer;
+package io.coala.id;
 
 import io.coala.json.JsonWrapper;
-import io.coala.type.TypeUtil;
+import io.coala.util.TypeUtil;
 
 import java.lang.reflect.Method;
 

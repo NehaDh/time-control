@@ -21,7 +21,7 @@
 package com.almende.timecontrol.eve;
 
 import static org.aeonbits.owner.util.Collections.entry;
-import io.coala.json.JsonUtil;
+import io.coala.util.JsonUtil;
 
 import java.net.URI;
 import java.util.Map;
@@ -101,8 +101,9 @@ public class SlaveAgent extends Agent implements EveTimedAPI, EveTimerAPI
 	}
 
 	@Override
-	protected void onBoot()
+	protected void loadConfig()
 	{
+		super.loadConfig();
 		initOnce();
 	}
 
@@ -254,10 +255,9 @@ public class SlaveAgent extends Agent implements EveTimedAPI, EveTimerAPI
 	{
 		synchronized (INSTANCES)
 		{
-			SlaveAgent result = INSTANCES.get(config.id());
+			SlaveAgent result = INSTANCES.get(config.id().getValue());
 			if (result == null)
 			{
-				LOG.trace("Create slave with config: {}", config);
 				result = SlaveAgent.valueOf(config);
 				INSTANCES.put(config.id().getValue(), result);
 			}

@@ -20,17 +20,18 @@
  */
 package com.almende.timecontrol.entity;
 
-import io.coala.json.JsonUtil;
+import io.coala.id.Identifier;
 import io.coala.json.dynabean.DynaBean;
-import io.coala.refer.Identifier;
+import io.coala.json.dynabean.DynaBean.BeanWrapper;
+import io.coala.util.JsonUtil;
 
 import java.util.Properties;
 
-import org.aeonbits.owner.Config;
-import org.joda.time.Duration;
-import org.joda.time.Instant;
+import org.aeonbits.owner.Mutable;
 
 import com.almende.timecontrol.TimeControl;
+import com.almende.timecontrol.time.Duration;
+import com.almende.timecontrol.time.Instant;
 import com.fasterxml.jackson.core.TreeNode;
 
 /**
@@ -40,8 +41,8 @@ import com.fasterxml.jackson.core.TreeNode;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-@DynaBean.BeanWrapper(comparableOn = TimeControl.ID_KEY)
-public interface TimerConfig extends Comparable<TimerConfig>, Config
+@BeanWrapper(comparableOn = TimeControl.ID_KEY)
+public interface TimerConfig extends Comparable<TimerConfig>, Mutable
 {
 
 	/** @return the {@link ID} of this {@link TimerConfig} */

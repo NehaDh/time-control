@@ -20,9 +20,9 @@
  */
 package com.almende.timecontrol.time;
 
-import io.coala.json.JsonUtil;
 import io.coala.json.JsonWrapper;
 import io.coala.json.JsonWrapper.JsonPolymorphic;
+import io.coala.util.JsonUtil;
 
 import java.math.BigDecimal;
 import java.util.Date;

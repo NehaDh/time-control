@@ -18,11 +18,13 @@
  * 
  * Copyright (c) 2014 Almende B.V. 
  */
-package com.almende.timecontrol.test;
+package com.almende.timecontrol;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Test;
 
+import com.almende.timecontrol.api.eve.EveUtil;
 import com.almende.timecontrol.entity.SlaveConfig;
 import com.almende.timecontrol.entity.TimerConfig;
 import com.almende.timecontrol.entity.TimerStatus;
@@ -42,9 +44,10 @@ public class SimpleExample
 	private static final Logger LOG = LogManager.getLogger(SimpleExample.class);
 
 	/**
-	 * @param args the CLI args
+	 * @throws Exception
 	 */
-	public static void main(final String[] args)
+	@Test
+	public void test() throws Exception
 	{
 		final String masterId = "exampleTimer1";
 
@@ -63,5 +66,8 @@ public class SimpleExample
 		slave.initOnce();
 		final TimerStatus status = slave.getStatus();
 		LOG.info("Connected to master, got status: {}", status);
+
+		EveUtil.stop();
+		// System.exit(0);
 	}
 }

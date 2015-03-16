@@ -20,7 +20,7 @@
  */
 package io.coala.config;
 
-import io.coala.resource.FileUtil;
+import io.coala.util.FileUtil;
 
 import java.io.InputStream;
 import java.lang.reflect.Method;

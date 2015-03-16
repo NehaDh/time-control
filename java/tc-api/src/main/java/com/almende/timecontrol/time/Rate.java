@@ -20,6 +20,7 @@
  */
 package com.almende.timecontrol.time;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 
 import javax.measure.DecimalMeasure;
@@ -28,9 +29,20 @@ import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Quantity;
 import javax.measure.unit.Unit;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
- * {@link Rate} extends {@link DecimalMeasure} with
- * {@link #valueOf(String)} for {@link Converters#CLASS_WITH_VALUE_OF_METHOD}.
+ * {@link Rate} extends {@link DecimalMeasure} with {@link #valueOf(String)} for
+ * {@link Converters#CLASS_WITH_VALUE_OF_METHOD}.
  * <p>
  * Assumes {@linkplain Double#NaN} as value for illegal/empty value types
  * 
@@ -38,8 +50,13 @@ import javax.measure.unit.Unit;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
+@JsonSerialize(using = Rate.JsonSerializer.class)
+@JsonDeserialize(using = Rate.JsonDeserializer.class)
 public class Rate extends DecimalMeasure<Dimensionless>
 {
+
+	/** */
+	private static final Logger LOG = LogManager.getLogger(Rate.class);
 
 	/** */
 	private static final long serialVersionUID = 1L;
@@ -128,8 +145,8 @@ public class Rate extends DecimalMeasure<Dimensionless>
 	public static <V extends Number, Q extends Quantity> Rate valueOf(
 			final Measure<V, Q> measure)
 	{
-		return new Rate(BigDecimal.valueOf(measure.getValue()
-				.doubleValue()), measure.getUnit().asType(Dimensionless.class));
+		return new Rate(BigDecimal.valueOf(measure.getValue().doubleValue()),
+				measure.getUnit().asType(Dimensionless.class));
 	}
 
 	/**
@@ -140,5 +157,30 @@ public class Rate extends DecimalMeasure<Dimensionless>
 	public static Rate valueOf(final String value)
 	{
 		return new Rate(value);
+	}
+
+	public static class JsonSerializer extends
+			com.fasterxml.jackson.databind.JsonSerializer<Rate>
+	{
+		public void serialize(final Rate value, final JsonGenerator gen,
+				final SerializerProvider serializers) throws IOException,
+				JsonProcessingException
+		{
+			LOG.trace("Serializing " + value);
+			gen.writeString(value.toString());
+		}
+	}
+
+	public static class JsonDeserializer extends
+			com.fasterxml.jackson.databind.JsonDeserializer<Rate>
+	{
+		@Override
+		public Rate deserialize(final JsonParser p,
+				final DeserializationContext ctxt) throws IOException,
+				JsonProcessingException
+		{
+			LOG.trace("Deserializing " + p.getText());
+			return Rate.valueOf(p.getText());
+		}
 	}
 }

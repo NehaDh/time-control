@@ -22,7 +22,7 @@ package io.coala.json.dynabean;
 
 import io.coala.error.ExceptionBuilder;
 import io.coala.json.dynabean.DynaBean.Builder;
-import io.coala.type.TypeUtil;
+import io.coala.util.TypeUtil;
 
 import java.util.HashMap;
 import java.util.List;

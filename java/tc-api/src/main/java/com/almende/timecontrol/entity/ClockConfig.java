@@ -20,15 +20,14 @@
  */
 package com.almende.timecontrol.entity;
 
-import io.coala.json.JsonUtil;
+import io.coala.id.Identifier;
 import io.coala.json.dynabean.DynaBean;
 import io.coala.json.dynabean.DynaBean.BeanWrapper;
-import io.coala.refer.Identifier;
+import io.coala.util.JsonUtil;
 
 import java.util.Properties;
 
 import org.aeonbits.owner.Mutable;
-import org.aeonbits.owner.Reloadable;
 import org.joda.time.Interval;
 
 import com.almende.timecontrol.TimeControl;
@@ -46,9 +45,7 @@ import com.fasterxml.jackson.core.TreeNode;
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
 @BeanWrapper(comparableOn = TimeControl.ID_KEY)
-public interface ClockConfig extends Comparable<ClockConfig>,
-// optional Config extensions
-		Mutable, Reloadable
+public interface ClockConfig extends Comparable<ClockConfig>, Mutable
 {
 
 	/** @return the {@link ID} of this {@link ClockConfig} */
@@ -61,6 +58,7 @@ public interface ClockConfig extends Comparable<ClockConfig>,
 	 *         {@link Replication}'s root {@link ClockConfig}
 	 */
 	@Key(TimeControl.FORK_PARENT_ID_KEY)
+	@DefaultValue("")
 	ID forkParentID();
 
 	/**
@@ -72,10 +70,12 @@ public interface ClockConfig extends Comparable<ClockConfig>,
 	 *         {@code time.equals(interval.toDuration())==true}
 	 */
 	@Key(TimeControl.FORK_TIME_KEY)
+	@DefaultValue("")
 	Duration forkTime();
 
 	/** @return the {@link Status} of this {@link ClockData} */
 	@Key(TimeControl.STATUS_KEY)
+	@DefaultValue("")
 	Status status();
 
 	/**
@@ -102,6 +102,7 @@ public interface ClockConfig extends Comparable<ClockConfig>,
 	 *         </dl>
 	 */
 	@Key(TimeControl.PACE_KEY)
+	@DefaultValue("")
 	Rate pace();
 
 	/**
@@ -112,6 +113,7 @@ public interface ClockConfig extends Comparable<ClockConfig>,
 	 *         {@code time.equals(interval.toDuration())==true}
 	 */
 	@Key(TimeControl.TIME_KEY)
+	@DefaultValue("")
 	Duration time();
 
 	/**
@@ -123,6 +125,7 @@ public interface ClockConfig extends Comparable<ClockConfig>,
 	 *         Replication.interval#toDuration()}, default = {@code null}
 	 */
 	@Key(TimeControl.UNTIL_KEY)
+	@DefaultValue("")
 	Duration until();
 
 	/**
@@ -231,7 +234,7 @@ public interface ClockConfig extends Comparable<ClockConfig>,
 		public static Builder fromJSON(final TreeNode tree,
 				final Properties... imports)
 		{
-			return new Builder(imports).id(tree.get(TimeControl.ID_KEY));
+			return new Builder(imports).withId(tree.get(TimeControl.ID_KEY));
 		}
 
 		/**
@@ -239,10 +242,10 @@ public interface ClockConfig extends Comparable<ClockConfig>,
 		 * @param imports optional property defaults
 		 * @return the new {@link Builder}
 		 */
-		public static Builder fromID(final String id,
+		public static Builder forID(final String id,
 				final Properties... imports)
 		{
-			return new Builder(imports).id(ID.valueOf(id));
+			return new Builder(imports).withId(ID.valueOf(id));
 		}
 
 		/**
@@ -253,48 +256,48 @@ public interface ClockConfig extends Comparable<ClockConfig>,
 			super(imports);
 		}
 
-		public Builder id(final TreeNode id)
+		public Builder withId(final TreeNode id)
 		{
-			return id(JsonUtil.valueOf(id, ID.class));
+			return withId(JsonUtil.valueOf(id, ID.class));
 		}
 
-		public Builder id(final ID id)
+		public Builder withId(final ID id)
 		{
 			with(TimeControl.ID_KEY, id);
 			return this;
 		}
 
-		public Builder forkParentID(final ClockConfig.ID forkParentID)
+		public Builder withForkParentID(final ClockConfig.ID forkParentID)
 		{
 			with(TimeControl.FORK_PARENT_ID_KEY, forkParentID);
 			return this;
 		}
 
-		public Builder forkTime(final Duration forkTime)
+		public Builder withForkTime(final Duration forkTime)
 		{
 			with(TimeControl.FORK_TIME_KEY, forkTime);
 			return this;
 		}
 
-		public Builder status(final Status status)
+		public Builder withStatus(final Status status)
 		{
 			with(TimeControl.STATUS_KEY, status);
 			return this;
 		}
 
-		public Builder pace(final Rate pace)
+		public Builder withPace(final Rate pace)
 		{
 			with(TimeControl.PACE_KEY, pace);
 			return this;
 		}
 
-		public Builder time(final Duration time)
+		public Builder withTime(final Duration time)
 		{
 			with(TimeControl.TIME_KEY, time);
 			return this;
 		}
 
-		public Builder until(final Duration until)
+		public Builder withUntil(final Duration until)
 		{
 			with(TimeControl.UNTIL_KEY, until);
 			return this;

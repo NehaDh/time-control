@@ -20,7 +20,7 @@
  */
 package io.coala.error;
 
-import io.coala.json.JsonUtil;
+import io.coala.util.JsonUtil;
 
 /**
  * {@link UncheckedException}

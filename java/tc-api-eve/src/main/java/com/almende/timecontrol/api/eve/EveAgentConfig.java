@@ -22,8 +22,8 @@ package com.almende.timecontrol.api.eve;
 
 import static org.aeonbits.owner.util.Collections.entry;
 import static org.aeonbits.owner.util.Collections.map;
-import io.coala.json.JsonUtil;
-import io.coala.resource.FileUtil;
+import io.coala.util.FileUtil;
+import io.coala.util.JsonUtil;
 
 import java.io.IOException;
 import java.io.InputStream;

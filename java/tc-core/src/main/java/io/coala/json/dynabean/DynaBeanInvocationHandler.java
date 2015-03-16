@@ -21,7 +21,7 @@
 package io.coala.json.dynabean;
 
 import io.coala.error.ExceptionBuilder;
-import io.coala.json.JsonUtil;
+import io.coala.util.JsonUtil;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -32,6 +32,8 @@ import java.util.Map;
 import org.aeonbits.owner.Config;
 import org.aeonbits.owner.ConfigFactory;
 import org.aeonbits.owner.Mutable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * {@link DynaBeanInvocationHandler}
@@ -42,6 +44,10 @@ import org.aeonbits.owner.Mutable;
  */
 public class DynaBeanInvocationHandler implements InvocationHandler
 {
+	/** */
+	private static final Logger LOG = LogManager
+			.getLogger(DynaBeanInvocationHandler.class);
+
 	/** */
 	private final Class<?> type;
 
@@ -74,11 +80,16 @@ public class DynaBeanInvocationHandler implements InvocationHandler
 							public void propertyChange(
 									final PropertyChangeEvent change)
 							{
-								DynaBean.LOG.trace(type.getSimpleName()
-										+ " changed: " + change);
+								LOG.trace(type.getSimpleName()
+										+ " changed: {} = {} (was {})",
+										change.getPropertyName(),
+										change.getNewValue(),
+										change.getOldValue());
+
 								// remove bean property in favor of changed
 								// default config
 								bean.remove(change.getPropertyName());
+
 								// FIXME actually parse new value
 							}
 						});
@@ -133,7 +144,8 @@ public class DynaBeanInvocationHandler implements InvocationHandler
 						(Comparable) this.bean, (Comparable) args[0]);
 
 			if (method.getReturnType().equals(Void.TYPE)
-					&& method.getParameterTypes().length != 0
+					&& method.getName().startsWith("set")
+					&& method.getParameterTypes().length == 1
 					&& method.getParameterTypes()[0].isAssignableFrom(args[0]
 							.getClass()))
 			{

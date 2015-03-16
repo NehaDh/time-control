@@ -1,0 +1,122 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.almende.time-control</groupId>
+		<artifactId>tc-parent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>tc-master-fluent-hc</artifactId>
+
+	<properties>
+		<wink.version>1.4</wink.version>
+		<jetty.version>9.2.0.v20140526</jetty.version>
+		<jetty.port>8180</jetty.port>
+		<coala.version>1.0.0</coala.version>
+		<coala-httpclient4-adapter.version>1.0.0</coala-httpclient4-adapter.version>
+	</properties>
+
+	<repositories>
+		<!-- COALA public Maven repository -->
+		<repository>
+			<name>COALA Public Maven Repository</name>
+			<id>coala-public</id>
+			<url>https://github.com/krevelen/coala/raw/mvn-repo/</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>daily</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+				<updatePolicy>never</updatePolicy>
+			</snapshots>
+		</repository>
+		<!-- Time-control public Maven repository -->
+		<repository>
+			<name>Time Control Public Maven Repository</name>
+			<id>tc-public</id>
+			<url>https://github.com/almende/time-control/raw/mvn-repo/</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>tc-impl</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.wink</groupId>
+			<artifactId>wink-server</artifactId>
+			<version>${wink.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.coala</groupId>
+			<artifactId>coala-httpclient4-adapter</artifactId>
+			<version>${coala-httpclient4-adapter.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.core</groupId>
+					<artifactId>jackson-databind</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-servlet</artifactId>
+			<version>${jetty.version}</version>
+		</dependency>
+
+		<dependency>
+			<!-- Used as unit testing framework, supports test-driven development -->
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<plugins>
+
+			<plugin>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>${jetty.version}</version>
+				<configuration>
+					<scanIntervalSeconds>2</scanIntervalSeconds>
+					<stopKey>foo</stopKey>
+					<stopPort>9999</stopPort>
+					<contextXml>${basedir}/src/test/resources/jetty-context.xml</contextXml>
+					<httpConnector>
+						<port>${jetty.port}</port>
+					</httpConnector>
+					<contextPath>/</contextPath>
+					<systemProperties>
+						<!-- <systemProperty> <name>coala.configuration</name> <value>adapt4ee.properties</value> 
+							</systemProperty> -->
+					</systemProperties>
+				</configuration>
+				<!-- <executions> <execution> <id>start-jetty</id> <phase>pre-integration-test</phase> 
+					<goals> <goal>start</goal> </goals> <configuration> <scanIntervalSeconds>0</scanIntervalSeconds> 
+					<daemon>true</daemon> </configuration> </execution> <execution> <id>stop-jetty</id> 
+					<phase>post-integration-test</phase> <goals> <goal>stop</goal> </goals> </execution> 
+					</executions> -->
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

@@ -20,7 +20,6 @@
 
 		<persistence-api.version>1.0.2</persistence-api.version>
 		<javax.persistence.version>2.1.0</javax.persistence.version>
-		<hibernate-jpa-2.1-api.version>1.0.0.Final</hibernate-jpa-2.1-api.version>
 		<javax.inject.version>1</javax.inject.version>
 		<javax.servlet-api.version>3.1.0</javax.servlet-api.version>
 		<validation-api.version>1.1.0.Final</validation-api.version>
@@ -31,6 +30,8 @@
 
 		<maven-dependency-plugin.version>2.4</maven-dependency-plugin.version>
 		<maven-compiler-plugin.version>2.3.2</maven-compiler-plugin.version>
+		<maven-deploy-plugin.version>2.8.1</maven-deploy-plugin.version>
+		<site-maven-plugin.version>0.9</site-maven-plugin.version>
 
 		<!-- set distribution versions -->
 		<wagon-ssh.version>1.0-beta-7</wagon-ssh.version>
@@ -40,27 +41,22 @@
 		<github.repository.owner>krevelen@gmail.com</github.repository.owner>
 		<github.repository.localid>internal.repo</github.repository.localid>
 		<github.repository.tmpdir>${user.dir}/target/mvn-repo</github.repository.tmpdir>
-		<github.repository.url>https://raw.github.com/almende/timecontrol/mvn-repo/</github.repository.url>
-		<site-maven-plugin.version>0.9</site-maven-plugin.version>
-		
-		<maven-deploy-plugin.version>2.8.1</maven-deploy-plugin.version>
+		<github.repository.url>https://raw.github.com/almende/time-control/mvn-repo/</github.repository.url>
 	</properties>
 
 	<modules>
 		<module>tc-core</module>
 		<module>tc-api</module>
+		<module>tc-impl</module>
+		
+		<module>tc-test</module>
+		
 		<module>tc-api-eve</module>
 		<module>tc-master-eve</module>
 		<module>tc-slave-eve</module>
-		<module>tc-test</module>
 		<module>tc-coala-adapter</module>
+		<module>tc-master-fluent-hc</module>
 	</modules>
-
-	<scm>
-		<url>https://github.com/almende/time-control</url>
-		<connection>scm:git:git@github.com:almende/time-control.git</connection>
-		<developerConnection>scm:git:git@github.com:almende/time-control.git</developerConnection>
-	</scm>
 
 	<organization>
 		<name>Almende BV</name>
@@ -78,6 +74,17 @@
 		</developer>
 	</developers>
 
+	<scm>
+		<url>https://github.com/almende/time-control</url>
+		<connection>scm:git:git@github.com:almende/time-control.git</connection>
+		<developerConnection>scm:git:git@github.com:almende/time-control.git</developerConnection>
+	</scm>
+
+	<!-- TODO move to Bintray? -->
+	<!-- <scm> <url>https://github.com/almende/time-control</url> <connection>scm:git:https://github.com/almende/time-control.git</connection> 
+		<developerConnection>scm:git:git@github.com:almende/time-control.git</developerConnection> 
+		<tag>HEAD</tag> </scm> -->
+
 	<distributionManagement>
 		<downloadUrl>https://github.com/krevelen/coala/raw/mvn-repo/</downloadUrl>
 		<repository>
@@ -86,6 +93,11 @@
 			<url>file://${github.repository.tmpdir}</url>
 		</repository>
 	</distributionManagement>
+
+	<!-- TODO move to Bintray? -->
+	<!-- <distributionManagement> <repository> <id>bintray-user-maven-package</id> 
+		<name>bintray-time-control</name> <url>https://api.bintray.com/maven/krevelen/maven/time-control</url> 
+		</repository> </distributionManagement> -->
 
 	<dependencyManagement>
 		<dependencies>
@@ -110,14 +122,6 @@
 				<groupId>javax.persistence</groupId>
 				<artifactId>persistence-api</artifactId>
 				<version>${persistence-api.version}</version>
-			</dependency>
-
-			<dependency>
-				<!-- Java Extension API for persistence, JSR-338 (JPA 2.1) and JSR-317 
-					(JPA 2.0) -->
-				<groupId>org.hibernate.javax.persistence</groupId>
-				<artifactId>hibernate-jpa-2.1-api</artifactId>
-				<version>${hibernate-jpa-2.1-api.version}</version>
 			</dependency>
 
 			<dependency>

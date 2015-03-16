@@ -17,17 +17,16 @@
  * 
  * Copyright (c) 2015 Almende B.V. 
  */
-package io.coala.json;
+package io.coala.util;
 
 import io.coala.error.ExceptionBuilder;
+import io.coala.json.JsonWrapper;
 import io.coala.json.dynabean.DynaBean;
 import io.coala.json.dynabean.DynaBean.BeanWrapper;
-import io.coala.type.TypeUtil;
 
 import java.beans.PropertyEditorSupport;
 import java.io.InputStream;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,7 +34,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-import org.aeonbits.owner.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -76,8 +74,8 @@ public class JsonUtil
 	}
 
 	/**
-	 * @param object
-	 * @return
+	 * @param object the object to serialize/marshal
+	 * @return the (minimal) JSON representation
 	 */
 	public static String stringify(final Object object)
 	{
@@ -91,8 +89,8 @@ public class JsonUtil
 	}
 
 	/**
-	 * @param object
-	 * @return
+	 * @param object the object to serialize/marshal
+	 * @return the (pretty) JSON representation
 	 */
 	public static String toJSON(final Object object)
 	{
@@ -281,18 +279,6 @@ public class JsonUtil
 
 			// use Class.forName(String) ?
 			// see http://stackoverflow.com/a/9130560
-
-			if (Config.class.isAssignableFrom(type))
-			{
-				// TODO implement dynamic generic Converter(s) for JSON bean
-				// properties ?
-
-				// final Class<?> editorType = new
-				// JsonPropertyEditor<T>().getClass();
-				// PropertyEditorManager.registerEditor(type, editorType);
-				// LOG.trace("Registered " + editorType + " - "
-				// + PropertyEditorManager.findEditor(type));
-			}
 
 			if (Proxy.isProxyClass(type)
 					|| type.isAnnotationPresent(BeanWrapper.class))

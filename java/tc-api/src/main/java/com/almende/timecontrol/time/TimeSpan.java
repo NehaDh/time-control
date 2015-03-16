@@ -20,6 +20,7 @@
  */
 package com.almende.timecontrol.time;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 
 import javax.measure.DecimalMeasure;
@@ -37,6 +38,14 @@ import org.joda.time.ReadableDuration;
 import org.threeten.bp.temporal.ChronoUnit;
 import org.threeten.bp.temporal.TemporalAmount;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * {@link TimeSpan} extends {@link DecimalMeasure} with {@link #valueOf(String)}
  * for {@link Converters#CLASS_WITH_VALUE_OF_METHOD}.
@@ -47,6 +56,8 @@ import org.threeten.bp.temporal.TemporalAmount;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
+@JsonSerialize(using = TimeSpan.JsonSerializer.class)
+@JsonDeserialize(using = TimeSpan.JsonDeserializer.class)
 public class TimeSpan extends DecimalMeasure<Duration>
 {
 
@@ -57,7 +68,20 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	private static final Logger LOG = LogManager.getLogger(TimeSpan.class);
 
 	/**
-	 * @param measure
+	 * Examples:
+	 * 
+	 * <pre>
+	 *    "PT20.345S" -> parses as "20.345 seconds"
+	 *    "PT15M"     -> parses as "15 minutes" (where a minute is 60 seconds)
+	 *    "PT10H"     -> parses as "10 hours" (where an hour is 3600 seconds)
+	 *    "P2D"       -> parses as "2 days" (where a day is 24 hours or 86400 seconds)
+	 *    "P2DT3H4M"  -> parses as "2 days, 3 hours and 4 minutes"
+	 *    "P-6H3M"    -> parses as "-6 hours and +3 minutes"
+	 *    "-P6H3M"    -> parses as "-6 hours and -3 minutes"
+	 *    "-P-6H+3M"  -> parses as "+6 hours and -3 minutes"
+	 * </pre>
+	 * 
+	 * @param measure the {@link String} representation of a duration
 	 * @return
 	 * 
 	 * @see org.threeten.bp.Duration#parse(String)
@@ -74,19 +98,28 @@ public class TimeSpan extends DecimalMeasure<Duration>
 			// SI.MILLI(SI.SECOND));
 			final org.threeten.bp.Duration temp = org.threeten.bp.Duration
 					.parse(measure);
-			return DecimalMeasure.valueOf(
-					BigDecimal.valueOf(temp.getSeconds())
-							.multiply(BigDecimal.TEN.pow(9))
-							.add(BigDecimal.valueOf(temp.getNano())),
-					SI.NANO(SI.SECOND));
+			final DecimalMeasure<Duration> result = temp.getNano() == 0 ? DecimalMeasure
+					.valueOf(BigDecimal.valueOf(temp.getSeconds()), SI.SECOND)
+					: DecimalMeasure.valueOf(
+							BigDecimal.valueOf(temp.getSeconds())
+									.multiply(BigDecimal.TEN.pow(9))
+									.add(BigDecimal.valueOf(temp.getNano())),
+							SI.NANO(SI.SECOND));
+			LOG.trace("Parsed '{}' using JSR-310 to JSR-275 measure/unit: {}",
+					measure, result);
+			return result;
 		} catch (final Exception e)
 		{
+			LOG.trace("JSR-310 failed", e);
 			try
 			{
 				final Period joda = Period.parse(measure);
-				return DecimalMeasure
-						.valueOf(BigDecimal.valueOf(joda.toStandardDuration()
+				final DecimalMeasure<Duration> result = DecimalMeasure.valueOf(
+						BigDecimal.valueOf(joda.toStandardDuration()
 								.getMillis()), SI.MILLI(SI.SECOND));
+				LOG.trace("Parsed '{}' using Joda to JSR-275 measure/unit: {}",
+						measure, result);
+				return result;
 			} catch (final Exception e1)
 			{
 				LOG.trace("Joda failed", e1);
@@ -208,6 +241,31 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	public static TimeSpan valueOf(final String measure)
 	{
 		return new TimeSpan(measure);
+	}
+
+	public static class JsonSerializer extends
+			com.fasterxml.jackson.databind.JsonSerializer<TimeSpan>
+	{
+		public void serialize(final TimeSpan value, final JsonGenerator gen,
+				final SerializerProvider serializers) throws IOException,
+				JsonProcessingException
+		{
+			LOG.trace("Serializing " + value);
+			gen.writeString(value.toString());
+		}
+	}
+
+	public static class JsonDeserializer extends
+			com.fasterxml.jackson.databind.JsonDeserializer<TimeSpan>
+	{
+		@Override
+		public TimeSpan deserialize(final JsonParser p,
+				final DeserializationContext ctxt) throws IOException,
+				JsonProcessingException
+		{
+			LOG.trace("Deserializing " + p.getText());
+			return TimeSpan.valueOf(p.getText());
+		}
 	}
 
 }

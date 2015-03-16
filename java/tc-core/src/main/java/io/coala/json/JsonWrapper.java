@@ -21,8 +21,9 @@
 package io.coala.json;
 
 import io.coala.error.ExceptionBuilder;
-import io.coala.refer.Identifier;
-import io.coala.type.TypeUtil;
+import io.coala.id.Identifier;
+import io.coala.util.JsonUtil;
+import io.coala.util.TypeUtil;
 
 import java.io.IOException;
 import java.lang.annotation.Documented;

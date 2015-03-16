@@ -20,9 +20,8 @@
  */
 package com.almende.timecontrol.time;
 
-import io.coala.json.JsonUtil;
 import io.coala.json.JsonWrapper;
-import io.coala.json.JsonWrapper.JsonPolymorphic;
+import io.coala.util.JsonUtil;
 
 import javax.measure.Measurable;
 import javax.measure.unit.SI;
@@ -87,7 +86,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-@JsonPolymorphic
 public class Duration implements JsonWrapper<TimeSpan>
 {
 

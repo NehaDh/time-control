@@ -37,6 +37,8 @@ import io.coala.time.ClockID;
 import io.coala.time.SimTime;
 import io.coala.time.TimeUnit;
 
+import java.net.URLClassLoader;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +46,9 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import javax.inject.Inject;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import rx.Observable;
 import rx.functions.Func1;
@@ -88,6 +93,10 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 
 	/** */
 	private volatile SimTime time;
+	
+	/** */
+	private static final Logger LOG = LogManager
+			.getLogger(TimeControlCapabilityImpl.class);
 
 	/**
 	 * {@link TimeControlCapabilityImpl} constructor
@@ -107,6 +116,8 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 				// TODO set slave values
 				.build();
 
+		LOG.trace("class path: "+Arrays.asList(
+		((URLClassLoader)Thread.currentThread().getContextClassLoader()).getURLs()).toString().replace(", ", ",\r\n"));
 		this.slave = SlaveAgent.getInstance(slaveConfig);
 	}
 
