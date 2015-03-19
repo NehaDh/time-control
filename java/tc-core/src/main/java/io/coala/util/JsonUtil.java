@@ -27,7 +27,6 @@ import io.coala.json.dynabean.DynaBean.BeanWrapper;
 import java.beans.PropertyEditorSupport;
 import java.io.InputStream;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -280,8 +279,7 @@ public class JsonUtil
 			// use Class.forName(String) ?
 			// see http://stackoverflow.com/a/9130560
 
-			if (Proxy.isProxyClass(type)
-					|| type.isAnnotationPresent(BeanWrapper.class))
+			if (type.isAnnotationPresent(BeanWrapper.class))
 			{
 				DynaBean.registerType(om, type, imports);
 

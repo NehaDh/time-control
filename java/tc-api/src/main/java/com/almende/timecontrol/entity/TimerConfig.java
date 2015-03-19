@@ -27,12 +27,14 @@ import io.coala.util.JsonUtil;
 
 import java.util.Properties;
 
+import org.aeonbits.owner.Accessible;
 import org.aeonbits.owner.Mutable;
 
 import com.almende.timecontrol.TimeControl;
 import com.almende.timecontrol.time.Duration;
 import com.almende.timecontrol.time.Instant;
 import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * {@link TimerConfig}
@@ -42,7 +44,8 @@ import com.fasterxml.jackson.core.TreeNode;
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
 @BeanWrapper(comparableOn = TimeControl.ID_KEY)
-public interface TimerConfig extends Comparable<TimerConfig>, Mutable
+public interface TimerConfig extends Comparable<TimerConfig>, Mutable,
+		Accessible
 {
 
 	/** @return the {@link ID} of this {@link TimerConfig} */
@@ -88,6 +91,15 @@ public interface TimerConfig extends Comparable<TimerConfig>, Mutable
 		public static ID valueOf(final String value)
 		{
 			return Identifier.valueOf(value, ID.class);
+		}
+
+		/**
+		 * @param tree
+		 * @return
+		 */
+		public static ID valueOf(final JsonNode tree)
+		{
+			return Identifier.valueOf(tree.asText(), ID.class);
 		}
 	}
 

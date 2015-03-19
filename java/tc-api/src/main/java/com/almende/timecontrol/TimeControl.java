@@ -34,6 +34,9 @@ public interface TimeControl
 	String ID_KEY = "id";
 
 	/** */
+	String CONFIG_KEY = "config";
+
+	/** */
 	String TIMER_KEY = "timer";
 
 	/** */
@@ -56,12 +59,15 @@ public interface TimeControl
 
 	/** */
 	String LAST_CALL_KEY = "lastCall";
-	
+
 	/** */
 	String LAST_TRIGGER_ID_KEY = "lastTriggerId";
-	
+
 	/** */
 	String LAST_JOB_ID_KEY = "lastJobId";
+
+	/** */
+	String TRIGGER_KEY = "trigger";
 
 	/** */
 	String TRIGGERS_KEY = "triggers";
@@ -70,7 +76,7 @@ public interface TimeControl
 	String UPCOMING_JOBS_KEY = "upcomingJobs";
 
 	/** */
-	String LISTENERS_KEY = "listeners";
+	String SUBSCRIBERS_KEY = "subscribers";
 
 	/** */
 	String RESOLUTION_KEY = "resolution";

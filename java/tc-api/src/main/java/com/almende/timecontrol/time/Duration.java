@@ -115,12 +115,6 @@ public class Duration implements JsonWrapper<TimeSpan>
 		return getValue().hashCode();
 	}
 
-	/** @see Converters.CLASS_WITH_VALUE_OF_METHOD */
-	public static Duration valueOf(final String json)
-	{
-		return JsonUtil.valueOf(json, Duration.class);
-	}
-
 	@JsonIgnore
 	public long millis()
 	{
@@ -158,4 +152,13 @@ public class Duration implements JsonWrapper<TimeSpan>
 	{
 		return getValue();
 	}
+
+	/** @see Converters.CLASS_WITH_VALUE_OF_METHOD */
+	public static Duration valueOf(final String json)
+	{
+		return JsonUtil.valueOf(json, Duration.class);
+	}
+
+	/** */
+	public static final Duration ZERO = Duration.valueOf("0");
 }

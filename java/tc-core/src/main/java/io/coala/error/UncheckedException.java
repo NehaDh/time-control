@@ -37,8 +37,16 @@ public class UncheckedException extends RuntimeException implements
 	private static final long serialVersionUID = 1L;
 
 	/** */
-	private final ExceptionContext context;
+	private ExceptionContext context = null;
 
+	/**
+	 * {@link UncheckedException} zero-arg bean constructor for JSON-RPC
+	 */
+	public UncheckedException()
+	{
+		// empty
+	}
+	
 	/**
 	 * {@link UncheckedException} constructor
 	 */

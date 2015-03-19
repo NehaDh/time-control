@@ -24,6 +24,7 @@ import io.coala.json.dynabean.DynaBean;
 import io.coala.json.dynabean.DynaBean.BeanWrapper;
 import io.coala.util.JsonUtil;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -31,39 +32,33 @@ import java.util.Properties;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.aeonbits.owner.Config;
-
 import com.almende.timecontrol.TimeControl;
 import com.fasterxml.jackson.core.TreeNode;
 
 /**
- * {@link SlaveStatus}
+ * {@link ClockStatus}
  * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-@BeanWrapper(comparableOn = TimeControl.SLAVE_KEY)
-public interface SlaveStatus extends Comparable<SlaveStatus>, Config
+@BeanWrapper(comparableOn = TimeControl.CONFIG_KEY)
+public interface ClockStatus extends Comparable<ClockStatus> // , Accessible
 {
 
 	/**
-	 * @return the currently known slave configuration
+	 * @return
 	 */
-	@Key(TimeControl.SLAVE_KEY)
-	SlaveConfig slave();
+	ClockConfig config();
+
+	/** the callback {@link URI}s for the listeners of the {@link #timer()} */
+	List<URI> subscribers();
 
 	/**
-	 * @return the currently pending triggers
+	 * @return the {@link SlaveStatus}s of {@link SlaveConfig}s currently
+	 *         managed by the {@link #timer()}
 	 */
-	@Key(TimeControl.TRIGGERS_KEY)
-	List<Trigger> triggers();
-
-	/**
-	 * @return the currently scheduled jobs per virtual time instant
-	 */
-	@Key(TimeControl.UPCOMING_JOBS_KEY)
-	List<Job> upcomingJobs();
+	List<TriggerStatus> triggers();
 
 	/**
 	 * {@link Builder}
@@ -72,7 +67,7 @@ public interface SlaveStatus extends Comparable<SlaveStatus>, Config
 	 * @version $Id$
 	 * @author <a href="mailto:rick@almende.org">Rick</a>
 	 */
-	class Builder extends DynaBean.Builder<SlaveStatus, Builder>
+	class Builder extends DynaBean.Builder<ClockStatus, Builder>
 	{
 
 		/**
@@ -101,23 +96,20 @@ public interface SlaveStatus extends Comparable<SlaveStatus>, Config
 				final Properties... imports)
 		{
 			return new Builder(imports)
-					.withSlave(tree.get(TimeControl.SLAVE_KEY))
+					.withConfig(tree.get(TimeControl.CONFIG_KEY))
 					.withTriggers(tree.get(TimeControl.TRIGGERS_KEY))
-					.withUpcomingJobs(tree.get(TimeControl.UPCOMING_JOBS_KEY));
+					.withSubscribers(tree.get(TimeControl.SUBSCRIBERS_KEY));
 		}
 
 		/**
-		 * {@link Builder} factory method
-		 * 
-		 * @param json the JSON-formatted {@link String}
+		 * @param config the {@link TimerConfig}
 		 * @param imports optional property defaults
 		 * @return the new {@link Builder}
 		 */
-		public static Builder forSlave(final SlaveConfig slave,
+		public static Builder fromConfig(final ClockConfig config,
 				final Properties... imports)
 		{
-			final Builder result = new Builder(imports);
-			return slave == null ? result : result.withSlave(slave);
+			return new Builder(imports).withConfig(config);
 		}
 
 		/**
@@ -130,16 +122,16 @@ public interface SlaveStatus extends Comparable<SlaveStatus>, Config
 			super(imports);
 		}
 
-		public Builder withSlave(final TreeNode slave)
+		public Builder withConfig(final TreeNode timer)
 		{
-			if (slave == null)
+			if (timer == null)
 				return this;
-			return withSlave(JsonUtil.valueOf(slave, SlaveConfig.class));
+			return withConfig(JsonUtil.valueOf(timer, ClockConfig.class));
 		}
 
-		public Builder withSlave(final SlaveConfig slave)
+		public Builder withConfig(final ClockConfig timer)
 		{
-			with(TimeControl.SLAVE_KEY, slave);
+			with(TimeControl.CONFIG_KEY, timer);
 			return this;
 		}
 
@@ -153,10 +145,10 @@ public interface SlaveStatus extends Comparable<SlaveStatus>, Config
 					withTriggers(clocks.get(i));
 				return this;
 			}
-			return withTriggers(JsonUtil.valueOf(clocks, Trigger.class));
+			return withTriggers(JsonUtil.valueOf(clocks, TriggerStatus.class));
 		}
 
-		public Builder withTriggers(final Trigger... clocks)
+		public Builder withTriggers(final TriggerStatus... clocks)
 		{
 			if (clocks == null || clocks.length == 0)
 				return this;
@@ -165,65 +157,56 @@ public interface SlaveStatus extends Comparable<SlaveStatus>, Config
 		}
 
 		@SuppressWarnings("unchecked")
-		public Builder withTriggers(final Collection<Trigger> clocks)
+		public Builder withTriggers(final Collection<TriggerStatus> clocks)
 		{
-			Object value = get(TimeControl.TRIGGERS_KEY, Object.class);
+			Object value = get(TimeControl.CLOCKS_KEY, Object.class);
 			if (value == null)
 			{
-				value = new TreeSet<Trigger>();
-				with(TimeControl.TRIGGERS_KEY, value);
+				value = new TreeSet<TriggerStatus>();
+				with(TimeControl.CLOCKS_KEY, value);
 			}
 
 			if (clocks != null && clocks.size() != 0)
 			{
-				final SortedSet<Trigger> map = (SortedSet<Trigger>) value;
-				for (Trigger clock : clocks)
-					map.add(clock);
+				final SortedSet<TriggerStatus> set = (SortedSet<TriggerStatus>) value;
+				for (TriggerStatus clock : clocks)
+					set.add(clock);
 			}
 			return this;
 		}
 
-		public Builder withUpcomingJobs(final TreeNode jobs)
+		public Builder withSubscribers(final TreeNode json)
 		{
-			if (jobs == null)
+			if (json == null)
 				return this;
-			if (jobs.isArray())
+			if (json.isArray())
 			{
-				for (int i = 0; i < jobs.size(); i++)
-					withUpcomingJobs(jobs.get(i));
+				for (int i = 0; i < json.size(); i++)
+					withSubscribers(json.get(i));
 				return this;
 			}
-			return withUpcomingJobs(JsonUtil.valueOf(jobs, Job.class));
+			return withSubscribers(JsonUtil.valueOf(json, URI.class));
 		}
 
-		public Builder withUpcomingJobs(final Job... jobs)
+		@SuppressWarnings("unchecked")
+		public Builder withSubscribers(final URI... uris)
 		{
-			if (jobs == null || jobs.length == 0)
-				return this;
-
-			return withUpcomingJobs(Arrays.asList(jobs));
-		}
-
-		/**
-		 * @param values
-		 * @return
-		 */
-		public Builder withUpcomingJobs(final Collection<Job> jobs)
-		{
-			Object value = get(TimeControl.UPCOMING_JOBS_KEY, Object.class);
+			Object value = get(TimeControl.SUBSCRIBERS_KEY, Object.class);
 			if (value == null)
 			{
-				value = new TreeSet<Job>();
-				with(TimeControl.UPCOMING_JOBS_KEY, value);
+				value = new TreeSet<URI>();
+				with(TimeControl.SUBSCRIBERS_KEY, value);
 			}
-			if (jobs != null && jobs.size() != 0)
+
+			if (uris != null && uris.length != 0)
 			{
-				@SuppressWarnings("unchecked")
-				final SortedSet<Job> map = (SortedSet<Job>) value;
-				for (Job job : jobs)
-					map.add(job);
+				final SortedSet<URI> list = (SortedSet<URI>) value;
+				for (URI uri : uris)
+					list.add(uri);
 			}
 			return this;
 		}
+
 	}
+
 }

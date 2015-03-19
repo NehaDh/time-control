@@ -32,6 +32,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -44,6 +45,9 @@ import java.util.WeakHashMap;
 
 import javax.inject.Provider;
 
+import org.aeonbits.owner.Accessible;
+import org.aeonbits.owner.Config;
+import org.aeonbits.owner.ConfigFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,9 +57,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -261,21 +267,49 @@ public class DynaBean implements Cloneable
 					final SerializerProvider serializers) throws IOException,
 					JsonProcessingException
 			{
-				if (Proxy.isProxyClass(value.getClass()))
+				// non-Proxy objects get default treatment
+				if (!Proxy.isProxyClass(value.getClass()))
+				{
+					serializers.findValueSerializer(value.getClass(), null)
+							.serialize(value, jgen, serializers);
+					return;
+				}
+
+				// BeanWrapper gets special treatment
+				if (DynaBeanInvocationHandler.class.isInstance(Proxy
+						.getInvocationHandler(value)))
 				{
 					final DynaBeanInvocationHandler handler = (DynaBeanInvocationHandler) Proxy
 							.getInvocationHandler(value);
 					// LOG.trace("Finding serializer for " +
 					// handler.bean.getClass());
-					// FIXME Jackson 2.4.0 ?
-					serializers.findValueSerializer(handler.bean.getClass())
-							.serialize(handler.bean, jgen, serializers);
-				} else
-				{
-					// LOG.trace("Finding serializer for " + value.getClass());
-					serializers.findValueSerializer(value.getClass())
-							.serialize(value, jgen, serializers);
+					serializers.findValueSerializer(handler.bean.getClass(),
+							null).serialize(handler.bean, jgen, serializers);
+					return;
 				}
+
+				// Config (Accessible) gets special treatment
+				if (Accessible.class.isInstance(value))
+				{
+					final Accessible config = (Accessible) value;
+					final Properties entries = new Properties();
+					for (String key : config.propertyNames())
+						entries.put(key, config.getProperty(key));
+					serializers.findValueSerializer(entries.getClass(), null)
+							.serialize(entries, jgen, serializers);
+					return;
+				}
+
+				if (Config.class.isInstance(value))
+					throw new JsonGenerationException("Config should extend "
+							+ Accessible.class.getName()
+							+ " required for serialization: "
+							+ Arrays.asList(value.getClass().getInterfaces()));
+
+				throw new JsonGenerationException(
+						"No serializer found for proxy of: "
+								+ Arrays.asList(value.getClass()
+										.getInterfaces()));
 			}
 		};
 	}
@@ -321,9 +355,20 @@ public class DynaBean implements Cloneable
 					final DeserializationContext ctxt) throws IOException,
 					JsonProcessingException
 			{
-				if (jp.getText() == null || jp.getText().length() == 0
-						|| jp.getText().equals("null"))
+				if (jp.getCurrentToken() == JsonToken.VALUE_NULL)
 					return null;
+
+				if (Config.class.isAssignableFrom(resultType))
+				{
+					final Properties entries = jp.readValueAs(Properties.class);
+					return resultType.cast(ConfigFactory.create(
+							resultType.asSubclass(Config.class), entries));
+				}
+				// else if (Config.class.isAssignableFrom(resultType))
+				// throw new JsonGenerationException(
+				// "Config does not extend "+Mutable.class.getName()+" required for deserialization: "
+				// + Arrays.asList(resultType
+				// .getInterfaces()));
 
 				// can't parse directly to interface type
 				final DynaBean bean = new DynaBean();

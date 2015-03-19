@@ -7,7 +7,7 @@ import org.junit.Test;
 import com.almende.timecontrol.entity.TimerStatus;
 
 /**
- * {@link TimerAgentTest} tests {@link TimerAgent}
+ * {@link TimerAgentTest} tests {@link TimeManagerAgent}
  * 
  * @date $Date$
  * @version $Id$
@@ -25,7 +25,7 @@ public class TimerAgentTest
 	{
 		final String timerID = "testTimerID";
 		LOG.trace("Getting status for instance: " + timerID);
-		final TimerStatus status = TimerAgent.getInstance(timerID).getStatus();
+		final TimerStatus status = TimeManagerAgent.getInstance(timerID).getTimerStatus();
 		LOG.trace("Got status: " + status);
 	}
 

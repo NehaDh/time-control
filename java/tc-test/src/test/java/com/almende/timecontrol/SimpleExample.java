@@ -24,12 +24,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
-import com.almende.timecontrol.api.eve.EveUtil;
-import com.almende.timecontrol.entity.SlaveConfig;
 import com.almende.timecontrol.entity.TimerConfig;
 import com.almende.timecontrol.entity.TimerStatus;
-import com.almende.timecontrol.eve.SlaveAgent;
-import com.almende.timecontrol.eve.TimerAgent;
+import com.almende.timecontrol.eve.TimeManagerAgent;
+import com.almende.timecontrol.eve.TimeManagerClientAgent;
 
 /**
  * {@link SimpleExample}
@@ -54,20 +52,14 @@ public class SimpleExample
 		final TimerConfig timerConfig = TimerConfig.Builder.forID(masterId)
 				.build();
 		LOG.info("Starting master with config: {}", timerConfig);
-		final TimerAgent master = TimerAgent.getInstance(masterId);
+		final TimeManagerAgent master = TimeManagerAgent.getInstance(masterId);
 		master.initialize(timerConfig);
 
-		final SlaveConfig slaveConfig = SlaveConfig.Builder
-				.forID("exampleSlave1")
-				.withTimerId(TimerConfig.ID.valueOf(masterId)).build();
-
-		LOG.info("Connecting slave with config: {}", slaveConfig);
-		final SlaveAgent slave = SlaveAgent.getInstance(slaveConfig);
-		slave.initOnce();
-		final TimerStatus status = slave.getStatus();
+		final String slaveID = "exampleSlave1";
+		LOG.info("Connecting slave: {}", slaveID);
+		final TimeManagerClientAgent slave = TimeManagerClientAgent
+				.getInstance(masterId, slaveID);
+		final TimerStatus status = slave.getTimerStatus();
 		LOG.info("Connected to master, got status: {}", status);
-
-		EveUtil.stop();
-		// System.exit(0);
 	}
 }

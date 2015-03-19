@@ -243,6 +243,16 @@ public class TimeSpan extends DecimalMeasure<Duration>
 		return new TimeSpan(measure);
 	}
 
+	/**
+	 * for "natural" Config value conversion
+	 * 
+	 * @see Converters.CLASS_WITH_VALUE_OF_METHOD
+	 */
+	public static TimeSpan valueOf(final Number measure)
+	{
+		return new TimeSpan(measure.doubleValue());
+	}
+
 	public static class JsonSerializer extends
 			com.fasterxml.jackson.databind.JsonSerializer<TimeSpan>
 	{
@@ -264,7 +274,8 @@ public class TimeSpan extends DecimalMeasure<Duration>
 				JsonProcessingException
 		{
 			LOG.trace("Deserializing " + p.getText());
-			return TimeSpan.valueOf(p.getText());
+			return p.getCurrentToken().isNumeric() ? TimeSpan.valueOf(p
+					.getNumberValue()) : TimeSpan.valueOf(p.getText());
 		}
 	}
 

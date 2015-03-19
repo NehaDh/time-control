@@ -18,60 +18,51 @@
  */
 package com.almende.timecontrol.api.eve;
 
+import java.net.URI;
+
+import rx.Observable;
+
 import com.almende.eve.protocol.jsonrpc.annotation.Access;
 import com.almende.eve.protocol.jsonrpc.annotation.AccessType;
 import com.almende.eve.protocol.jsonrpc.annotation.Name;
-import com.almende.timecontrol.api.TimerAPI;
+import com.almende.timecontrol.api.TimeManagerAPI;
+import com.almende.timecontrol.api.TimeObserverAPI;
 import com.almende.timecontrol.entity.ClockConfig;
-import com.almende.timecontrol.entity.SlaveConfig;
-import com.almende.timecontrol.entity.TimerConfig;
-import com.almende.timecontrol.entity.TimerStatus;
-import com.almende.timecontrol.entity.Trigger;
+import com.almende.timecontrol.entity.TriggerEvent;
+import com.almende.timecontrol.entity.TriggerConfig;
 
 /**
- * {@link EveTimerAPI} adds {@link Name} annotations to {@link TimerAPI} where
- * required
+ * {@link EveTimeObserverAPI} adds Eve's {@link Name} annotations to
+ * {@link TimeManagerAPI} where required
  * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public interface EveTimerAPI extends TimerAPI
+public interface EveTimeObserverAPI extends TimeObserverAPI, EveAgentAPI
 {
 
+	/** @see EveTimeObserverClientAPI#notifyClock(ClockConfig) */
 	@Override
+	@Access(AccessType.UNAVAILABLE)
+	Observable<ClockConfig> observeClock(ClockConfig.ID id);
+
+	@Override
+	@Access(AccessType.UNAVAILABLE)
+	void updateTrigger(TriggerConfig trigger);
+
+	/** @see #updateTrigger(TriggerConfig) */
 	@Access(AccessType.PUBLIC)
-	TimerStatus getStatus();
+	void updateTrigger(@Name("callbackURI") URI callbackURI,
+			@Name("trigger") TriggerConfig trigger);
+
+	/** @see EveTimeObserverClientAPI#notifyTrigger(TriggerEvent) */
+	@Override
+	@Access(AccessType.UNAVAILABLE)
+	Observable<TriggerEvent> observeTrigger(TriggerConfig.ID triggerId);
 
 	@Override
 	@Access(AccessType.PUBLIC)
-	void initialize(@Name("config") TimerConfig config);
+	void removeTrigger(@Name("triggerId") TriggerConfig.ID triggerId);
 
-	@Override
-	@Access(AccessType.PUBLIC)
-	void destroy();
-
-	@Override
-	@Access(AccessType.PUBLIC)
-	void updateSlaveConfig(@Name("slave") SlaveConfig slave);
-
-	@Override
-	@Access(AccessType.PUBLIC)
-	void removeSlave(@Name("slaveId") SlaveConfig.ID slaveId);
-
-	@Override
-	@Access(AccessType.PUBLIC)
-	void updateClockConfig(@Name("clock") ClockConfig clock);
-
-	@Override
-	@Access(AccessType.PUBLIC)
-	void removeClock(@Name("clockId") ClockConfig.ID clockId);
-
-	@Override
-	@Access(AccessType.PUBLIC)
-	void updateTrigger(@Name("trigger") Trigger trigger);
-
-	@Override
-	@Access(AccessType.PUBLIC)
-	void removeTrigger(@Name("triggerId") Trigger.ID triggerId);
 }

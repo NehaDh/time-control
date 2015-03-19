@@ -21,26 +21,44 @@ package com.almende.timecontrol.api.eve;
 import com.almende.eve.protocol.jsonrpc.annotation.Access;
 import com.almende.eve.protocol.jsonrpc.annotation.AccessType;
 import com.almende.eve.protocol.jsonrpc.annotation.Name;
-import com.almende.timecontrol.api.SlaveAPI;
+import com.almende.timecontrol.api.TimeManagerAPI;
 import com.almende.timecontrol.entity.ClockConfig;
-import com.almende.timecontrol.entity.Job;
+import com.almende.timecontrol.entity.TimerConfig;
+import com.almende.timecontrol.entity.TimerStatus;
 
 /**
- * {@link EveTimedAPI} adds {@link Name} annotations to {@link SlaveAPI}
+ * {@link EveTimeManagerAPI} adds Eve's {@link Name} annotations to
+ * {@link TimeManagerAPI} where required
  * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public interface EveTimedAPI extends SlaveAPI
+public interface EveTimeManagerAPI extends TimeManagerAPI, EveTimeObserverAPI
 {
 
 	@Override
 	@Access(AccessType.PUBLIC)
-	void notify(@Name("clock") ClockConfig clock);
+	void initialize(@Name("config") TimerConfig config);
 
 	@Override
 	@Access(AccessType.PUBLIC)
-	void notify(@Name("job") Job job);
+	TimerConfig getTimerConfig();
+
+	@Override
+	@Access(AccessType.PUBLIC)
+	TimerStatus getTimerStatus();
+
+	@Override
+	@Access(AccessType.PUBLIC)
+	void destroy();
+
+	@Override
+	@Access(AccessType.PUBLIC)
+	void updateClock(@Name("clock") ClockConfig clock);
+
+	@Override
+	@Access(AccessType.PUBLIC)
+	void removeClock(@Name("clockId") ClockConfig.ID clockId);
 
 }

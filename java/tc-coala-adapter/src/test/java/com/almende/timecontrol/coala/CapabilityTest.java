@@ -39,6 +39,8 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
+import com.almende.timecontrol.eve.TimeManagerAgent;
+
 import rx.Observer;
 
 /**
@@ -61,11 +63,14 @@ public class CapabilityTest
 		LOG.trace("Started " + TimeControlCapabilityImpl.class.getSimpleName()
 				+ " test...");
 
+		final String modelname = "testModel" + System.currentTimeMillis();
+		final TimeManagerAgent timer = TimeManagerAgent.getInstance(modelname);
+		LOG.trace("Started timer at urls: " + timer.getUrls());
+
 		final Binder binder = BinderFactory.Builder
 				.fromFile()
 				.withProperty(ReplicationConfig.class,
-						ReplicationConfig.MODEL_NAME_KEY,
-						"testModel" + System.currentTimeMillis()).build()
+						ReplicationConfig.MODEL_NAME_KEY, modelname).build()
 				.create("_unittest_");
 
 		final CreatingCapability booterSvc = binder
@@ -74,7 +79,6 @@ public class CapabilityTest
 		binder.inject(ReplicatingCapability.class).getStatusUpdates()
 				.subscribe(new Observer<ClockStatusUpdate>()
 				{
-
 					@Override
 					public void onCompleted()
 					{

@@ -20,68 +20,35 @@
  */
 package com.almende.timecontrol.entity;
 
-import io.coala.id.Identifier;
 import io.coala.json.dynabean.DynaBean;
 import io.coala.json.dynabean.DynaBean.BeanWrapper;
 import io.coala.util.JsonUtil;
 
+import java.net.URI;
+import java.util.List;
 import java.util.Properties;
-
-import org.aeonbits.owner.Config;
-import org.joda.time.Instant;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.almende.timecontrol.TimeControl;
-import com.almende.timecontrol.time.Duration;
 import com.fasterxml.jackson.core.TreeNode;
 
 /**
- * {@link Job}
+ * {@link TriggerStatus}
  * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-@BeanWrapper(comparableOn = TimeControl.ID_KEY)
-public interface Job extends Comparable<Job>, Config
+@BeanWrapper(comparableOn = TimeControl.CONFIG_KEY)
+public interface TriggerStatus extends Comparable<TriggerStatus> // , Accessible
 {
 
-	/** @return the {@link ID} of this {@link Job} */
-	@Key(TimeControl.ID_KEY)
-	ID id();
+	/** @return the current {@link TriggerConfig} */
+	TriggerConfig config();
 
-	/** the simulated time {@link Instant} when this {@link Job} occurs */
-	@Key(TimeControl.TIME_KEY)
-	Duration time();
-
-	/**
-	 * the {@link Trigger.ID} of the {@link Trigger} that generated this
-	 * {@link Job}
-	 */
-	@Key(TimeControl.TRIGGER_ID_KEY)
-	Trigger.ID triggerId();
-
-	/**
-	 * @return {@code true} iff this is the last {@link Job} created by its
-	 *         {@link Trigger}, {@code false} otherwise
-	 */
-	@Key(TimeControl.LAST_CALL_KEY)
-	boolean lastCall();
-
-	/**
-	 * {@link ID}
-	 * 
-	 * @date $Date$
-	 * @version $Id$
-	 * @author <a href="mailto:rick@almende.org">Rick</a>
-	 */
-	class ID extends Identifier<String>
-	{
-		/** @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD */
-		public static ID valueOf(final String value)
-		{
-			return Identifier.valueOf(value, ID.class);
-		}
-	}
+	/** the callback {@link URI}s for the listeners of the {@link #config()} */
+	List<URI> subscribers();
 
 	/**
 	 * {@link Builder}
@@ -90,7 +57,7 @@ public interface Job extends Comparable<Job>, Config
 	 * @version $Id$
 	 * @author <a href="mailto:rick@almende.org">Rick</a>
 	 */
-	class Builder extends DynaBean.Builder<Job, Builder>
+	class Builder extends DynaBean.Builder<TriggerStatus, Builder>
 	{
 
 		/**
@@ -103,7 +70,9 @@ public interface Job extends Comparable<Job>, Config
 		public static Builder fromJSON(final String json,
 				final Properties... imports)
 		{
-			return fromJSON(JsonUtil.valueOf(json));
+			final TreeNode tree = JsonUtil.valueOf(json);
+			return tree == null ? new Builder(imports)
+					: fromJSON(tree, imports);
 		}
 
 		/**
@@ -116,55 +85,74 @@ public interface Job extends Comparable<Job>, Config
 		public static Builder fromJSON(final TreeNode tree,
 				final Properties... imports)
 		{
-			return new Builder(imports).id(tree.get(TimeControl.ID_KEY));
+			return new Builder(imports).withConfig(
+					tree.get(TimeControl.TRIGGER_KEY)).withSubscribers(
+					tree.get(TimeControl.SUBSCRIBERS_KEY));
 		}
 
 		/**
-		 * @param id the JSON-formatted identifier value
+		 * @param config the {@link TriggerConfig}
 		 * @param imports optional property defaults
 		 * @return the new {@link Builder}
 		 */
-		public static Builder fromID(final String id,
+		public static Builder fromConfig(final TriggerConfig config,
 				final Properties... imports)
 		{
-			return new Builder(imports).id(ID.valueOf(id));
+			return new Builder(imports).withConfig(config);
 		}
 
 		/**
-		 * {@link Builder} constructor, to be extended by a public zero-arg
-		 * constructor in concrete sub-types
+		 * {@link Builder} constructor
+		 * 
+		 * @param imports optional property defaults
 		 */
 		public Builder(final Properties... imports)
 		{
 			super(imports);
 		}
 
-		public Builder id(final TreeNode id)
+		public Builder withConfig(final TreeNode timer)
 		{
-			return id(JsonUtil.valueOf(id, ID.class));
+			if (timer == null)
+				return this;
+			return withConfig(JsonUtil.valueOf(timer, TriggerConfig.class));
 		}
 
-		public Builder id(final ID id)
+		public Builder withConfig(final TriggerConfig timer)
 		{
-			with(TimeControl.ID_KEY, id);
+			with(TimeControl.TIMER_KEY, timer);
 			return this;
 		}
 
-		public Builder time(final Duration time)
+		public Builder withSubscribers(final TreeNode json)
 		{
-			with(TimeControl.TIME_KEY, time);
-			return this;
+			if (json == null)
+				return this;
+			if (json.isArray())
+			{
+				for (int i = 0; i < json.size(); i++)
+					withSubscribers(json.get(i));
+				return this;
+			}
+			return withSubscribers(JsonUtil.valueOf(json, URI.class));
 		}
 
-		public Builder triggerID(final Trigger.ID triggerId)
+		@SuppressWarnings("unchecked")
+		public Builder withSubscribers(final URI... uris)
 		{
-			with(TimeControl.TRIGGER_ID_KEY, triggerId);
-			return this;
-		}
+			Object value = get(TimeControl.SUBSCRIBERS_KEY, Object.class);
+			if (value == null)
+			{
+				value = new TreeSet<URI>();
+				with(TimeControl.SUBSCRIBERS_KEY, value);
+			}
 
-		public Builder lastCall(final boolean lastCall)
-		{
-			with(TimeControl.LAST_CALL_KEY, lastCall);
+			if (uris != null && uris.length != 0)
+			{
+				final SortedSet<URI> list = (SortedSet<URI>) value;
+				for (URI uri : uris)
+					list.add(uri);
+			}
 			return this;
 		}
 

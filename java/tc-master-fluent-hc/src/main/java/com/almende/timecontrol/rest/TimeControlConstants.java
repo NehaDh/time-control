@@ -16,7 +16,7 @@
  * 
  * Copyright (c) 2015 Almende B.V. 
  */
-package com.almende.timecontrol.api;
+package com.almende.timecontrol.rest;
 
 /**
  * {@link TimeControlConstants} encodes constants related to master-slave interaction

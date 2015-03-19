@@ -29,13 +29,15 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import org.aeonbits.owner.ConfigFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 
-import com.almende.eve.agent.Agent;
+import rx.Observer;
+
 import com.almende.eve.agent.AgentBuilder;
 import com.almende.eve.agent.AgentConfig;
 import com.almende.eve.capabilities.Config;
@@ -67,38 +69,95 @@ public class EveUtil
 		final Package tcEntities = com.almende.timecontrol.entity.TimerConfig.class
 				.getPackage();
 		// final Properties[] imports = null;
-		for (Method method : type.getDeclaredMethods())
+		for (Method method : type.getMethods())
 		{
 			if (method.getReturnType() != Void.TYPE
 					&& method.getReturnType().getPackage() == tcEntities)
 				JsonUtil.checkRegistered(om, method.getReturnType());
+			// else
+			// LOG.trace("Ignoring de/serializers for "
+			// + method.getReturnType().getName());
 			for (Class<?> paramType : method.getParameterTypes())
 				if (paramType.getPackage() == tcEntities)
 					JsonUtil.checkRegistered(om, paramType);
+			// else
+			// LOG.trace("Ignoring de/serializers for "
+			// + paramType.getName());
 		}
 	}
+
+	private static boolean registered = false;
 
 	/** */
 	@SuppressWarnings("unchecked")
 	@SafeVarargs
-	public static final <T extends Agent> T valueOf(
+	public static final <T extends EveAgentAPI> T valueOf(
 			final AgentConfig agentConfig, final Class<T> agentType,
 			final Map.Entry<String, ? extends JsonNode>... parameters)
 	{
-		checkRegistered(agentType);
-
+		synchronized (EveUtil.class)
+		{
+			if (!registered)
+			{
+				checkRegistered(EveTimeManagerAPI.class);
+				registered = true;
+			}
+		}
 		if (parameters != null && parameters.length != 0)
 			for (Map.Entry<String, ? extends JsonNode> param : parameters)
+			{
+				LOG.trace("Importing agent parameter: " + param);
 				agentConfig.set(param.getKey(), param.getValue());
+			}
 
 		final T result = (T) new AgentBuilder().with(agentConfig).build();
-		LOG.trace("Created agent with config: {}", agentConfig);
+		final CountDownLatch waitUntilInit = new CountDownLatch(1);
+		// Schedulers.newThread().createWorker().schedule(new Action0()
+		// {
+		// @Override
+		// public void call()
+		// {
+		result.events().subscribe(new Observer<String>()
+		{
+			@Override
+			public void onCompleted()
+			{
+				LOG.error("Completed observing events for agent: "
+						+ agentConfig.getId());
+			}
+
+			@Override
+			public void onError(final Throwable e)
+			{
+				LOG.error("Problem while observing events for agent: "
+						+ agentConfig.getId(), e);
+			}
+
+			@Override
+			public void onNext(final String event)
+			{
+				LOG.trace("Agent {} produced event: {}", agentConfig.getId(),
+						event);
+				if (event.equals(EveAgentAPI.AGENT_INITIALIZED))
+					waitUntilInit.countDown();
+			}
+		});
+		// }
+		// });
+		try
+		{
+			LOG.trace("Waiting for agent to load config: {}", agentConfig);
+			waitUntilInit.await();
+		} catch (final InterruptedException e)
+		{
+			LOG.warn("Interrupted while awaiting agent to load config");
+		}
 		return result;
 	}
 
 	/** */
 	@SafeVarargs
-	public static final <T extends Agent> T valueOf(final String id,
+	public static final <T extends EveAgentAPI> T valueOf(final String id,
 			final Class<T> agentType,
 			final Map.Entry<String, ? extends JsonNode>... parameters)
 	{

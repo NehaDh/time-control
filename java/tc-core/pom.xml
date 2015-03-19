@@ -16,7 +16,6 @@
 		<junit.version>4.12</junit.version>
 
 		<rxjava.version>0.20.7</rxjava.version>
-		<jackson.version>2.5.1</jackson.version>
 		<uuid.version>3.4</uuid.version>
 		<owner.version>1.0.6</owner.version>
 
@@ -56,7 +55,7 @@
 				programming) -->
 			<groupId>javax.inject</groupId>
 			<artifactId>javax.inject</artifactId>
-			<scope>provided</scope>
+			<!-- Provider interface MUST BE AVAILABLE <scope>provided</scope> -->
 		</dependency>
 
 		<dependency>
@@ -93,7 +92,6 @@
 			<!-- JSON <-> Java object mapping -->
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-joda</artifactId>
-			<version>${jackson.version}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>joda-time</groupId>
@@ -106,7 +104,6 @@
 			<!-- JSON <-> Java object mapping -->
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-yaml</artifactId>
-			<version>${jackson.version}</version>
 		</dependency>
 
 		<dependency>

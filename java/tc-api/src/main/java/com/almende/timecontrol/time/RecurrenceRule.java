@@ -23,10 +23,13 @@ package com.almende.timecontrol.time;
 import io.coala.error.ExceptionBuilder;
 import io.coala.util.JsonUtil;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadableDateTime;
@@ -39,6 +42,13 @@ import rx.Subscriber;
 import rx.functions.Func1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.ical.compat.jodatime.DateTimeIteratorFactory;
 
 /**
@@ -48,7 +58,10 @@ import com.google.ical.compat.jodatime.DateTimeIteratorFactory;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public class RecurrenceRule //implements JsonWrapper<String>// Iterable<Instant>
+@JsonSerialize(using = RecurrenceRule.JsonSerializer.class)
+@JsonDeserialize(using = RecurrenceRule.JsonDeserializer.class)
+public class RecurrenceRule // implements JsonWrapper<String>//
+							// Iterable<Instant>
 {
 	/** */
 	private static final Pattern dtStartTimePattern = Pattern
@@ -59,9 +72,10 @@ public class RecurrenceRule //implements JsonWrapper<String>// Iterable<Instant>
 			.compile("TZID=([^:;]*)");
 
 	/** */
-	private final Object value;
+	private Object value;
 
 	/** */
+	@JsonIgnore
 	private final Observable<Instant> values;
 
 	/**
@@ -139,7 +153,7 @@ public class RecurrenceRule //implements JsonWrapper<String>// Iterable<Instant>
 	 */
 	public RecurrenceRule(final String json)
 	{
-		this(json,parseInstantOrIntervalOrRule(json));
+		this(json, parseInstantOrIntervalOrRule(json));
 	}
 
 	/**
@@ -151,7 +165,8 @@ public class RecurrenceRule //implements JsonWrapper<String>// Iterable<Instant>
 	public RecurrenceRule(final double absoluteInstantMS)
 	{
 		// TODO convert to default time unit (other than MILLIS)?
-		this(absoluteInstantMS, Observable.just(Instant.valueOf((long) absoluteInstantMS)));
+		this(absoluteInstantMS, Observable.just(Instant
+				.valueOf((long) absoluteInstantMS)));
 	}
 
 	/**
@@ -162,7 +177,8 @@ public class RecurrenceRule //implements JsonWrapper<String>// Iterable<Instant>
 	 */
 	public RecurrenceRule(final int absoluteInstantMS)
 	{
-		this(absoluteInstantMS, Observable.just(Instant.valueOf(absoluteInstantMS)));
+		this(absoluteInstantMS, Observable.just(Instant
+				.valueOf(absoluteInstantMS)));
 	}
 
 	/**
@@ -182,6 +198,18 @@ public class RecurrenceRule //implements JsonWrapper<String>// Iterable<Instant>
 		return this.value;
 	}
 
+	@Override
+	public String toString()
+	{
+		return getValue().toString();
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		return getValue().hashCode();
+	}
+	
 	/**
 	 * @return
 	 */
@@ -236,6 +264,37 @@ public class RecurrenceRule //implements JsonWrapper<String>// Iterable<Instant>
 	public static RecurrenceRule valueOf(final String json)
 	{
 		return JsonUtil.valueOf(json, RecurrenceRule.class);
+	}
+
+	/** */
+	private static final Logger LOG = LogManager
+			.getLogger(RecurrenceRule.class);
+
+	public static class JsonSerializer extends
+			com.fasterxml.jackson.databind.JsonSerializer<RecurrenceRule>
+	{
+		public void serialize(final RecurrenceRule value,
+				final JsonGenerator gen, final SerializerProvider serializers)
+				throws IOException, JsonProcessingException
+		{
+			LOG.trace("Serializing " + value);
+			gen.writeString(value.toString());
+		}
+	}
+
+	public static class JsonDeserializer extends
+			com.fasterxml.jackson.databind.JsonDeserializer<RecurrenceRule>
+	{
+		@Override
+		public RecurrenceRule deserialize(final JsonParser p,
+				final DeserializationContext ctxt) throws IOException,
+				JsonProcessingException
+		{
+			LOG.trace("Deserializing " + p.getText());
+			return p.getCurrentToken().isNumeric() ? new RecurrenceRule(p
+					.getNumberValue().doubleValue()) : new RecurrenceRule(
+					p.getText());
+		}
 	}
 
 }

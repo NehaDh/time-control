@@ -27,32 +27,40 @@ import io.coala.util.JsonUtil;
 
 import java.util.Properties;
 
-import org.aeonbits.owner.Config;
+import org.joda.time.Instant;
 
 import com.almende.timecontrol.TimeControl;
-import com.almende.timecontrol.time.RecurrenceRule;
+import com.almende.timecontrol.time.Duration;
 import com.fasterxml.jackson.core.TreeNode;
 
 /**
- * {@link Trigger}
+ * {@link TriggerEvent}
  * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
 @BeanWrapper(comparableOn = TimeControl.ID_KEY)
-public interface Trigger extends Comparable<Trigger>, Config
+public interface TriggerEvent extends Comparable<TriggerEvent>
 {
 
-	/** @return the {@link ID} of this {@link Trigger} */
-	@Key(TimeControl.ID_KEY)
+	/** @return the {@link ID} of this {@link TriggerEvent} */
 	ID id();
 
+	/** the simulated time {@link Instant} when this {@link TriggerEvent} occurs */
+	Duration time();
+
 	/**
-	 * @return
+	 * the {@link TriggerConfig.ID} of the {@link TriggerConfig} that generated
+	 * this {@link TriggerEvent}
 	 */
-	@Key(TimeControl.RECURRENCE_KEY)
-	RecurrenceRule recurrence();
+	TriggerConfig.ID triggerId();
+
+	/**
+	 * @return {@code true} iff this is the last {@link TriggerEvent} created by its
+	 *         {@link TriggerConfig}, {@code false} otherwise
+	 */
+	boolean lastCall();
 
 	/**
 	 * {@link ID}
@@ -64,9 +72,9 @@ public interface Trigger extends Comparable<Trigger>, Config
 	class ID extends Identifier<String>
 	{
 		/** @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD */
-		public static ID valueOf(final String json)
+		public static ID valueOf(final String value)
 		{
-			return Identifier.valueOf(json, ID.class);
+			return Identifier.valueOf(value, ID.class);
 		}
 	}
 
@@ -77,7 +85,7 @@ public interface Trigger extends Comparable<Trigger>, Config
 	 * @version $Id$
 	 * @author <a href="mailto:rick@almende.org">Rick</a>
 	 */
-	class Builder extends DynaBean.Builder<Trigger, Builder>
+	class Builder extends DynaBean.Builder<TriggerEvent, Builder>
 	{
 
 		/**
@@ -90,7 +98,7 @@ public interface Trigger extends Comparable<Trigger>, Config
 		public static Builder fromJSON(final String json,
 				final Properties... imports)
 		{
-			return fromJSON(JsonUtil.valueOf(json), imports);
+			return fromJSON(JsonUtil.valueOf(json));
 		}
 
 		/**
@@ -103,8 +111,7 @@ public interface Trigger extends Comparable<Trigger>, Config
 		public static Builder fromJSON(final TreeNode tree,
 				final Properties... imports)
 		{
-			return new Builder(imports).withID(tree.get(TimeControl.ID_KEY))
-					.withRecurrence(tree.get(TimeControl.RECURRENCE_KEY));
+			return new Builder(imports).id(tree.get(TimeControl.ID_KEY));
 		}
 
 		/**
@@ -115,41 +122,47 @@ public interface Trigger extends Comparable<Trigger>, Config
 		public static Builder fromID(final String id,
 				final Properties... imports)
 		{
-			return new Builder(imports).withID(ID.valueOf(id));
+			return new Builder(imports).id(ID.valueOf(id));
 		}
 
 		/**
-		 * {@link Builder} constructor
-		 * 
-		 * @param imports optional property defaults
+		 * {@link Builder} constructor, to be extended by a public zero-arg
+		 * constructor in concrete sub-types
 		 */
 		public Builder(final Properties... imports)
 		{
 			super(imports);
 		}
 
-		public Builder withID(final TreeNode id)
+		public Builder id(final TreeNode id)
 		{
-			return withID(JsonUtil.valueOf(id, ID.class));
+			return id(JsonUtil.valueOf(id, ID.class));
 		}
 
-		public Builder withID(final ID id)
+		public Builder id(final ID id)
 		{
 			with(TimeControl.ID_KEY, id);
 			return this;
 		}
 
-		public Builder withRecurrence(final TreeNode recurrence)
+		public Builder time(final Duration time)
 		{
-			return withRecurrence(JsonUtil.valueOf(recurrence,
-					RecurrenceRule.class));
+			with(TimeControl.TIME_KEY, time);
+			return this;
 		}
 
-		public Builder withRecurrence(final RecurrenceRule recurrence)
+		public Builder triggerID(final TriggerConfig.ID triggerId)
 		{
-			with(TimeControl.RECURRENCE_KEY, recurrence);
+			with(TimeControl.TRIGGER_ID_KEY, triggerId);
+			return this;
+		}
+
+		public Builder lastCall(final boolean lastCall)
+		{
+			with(TimeControl.LAST_CALL_KEY, lastCall);
 			return this;
 		}
 
 	}
+
 }

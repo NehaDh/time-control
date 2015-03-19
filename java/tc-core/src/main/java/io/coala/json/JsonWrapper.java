@@ -198,7 +198,7 @@ public interface JsonWrapper<T>
 						final SerializerProvider serializers)
 						throws IOException, JsonProcessingException
 				{
-					serializers.findValueSerializer(valueType).serialize(
+					serializers.findValueSerializer(valueType, null).serialize(
 							value.getValue(), jgen, serializers);
 				}
 			};

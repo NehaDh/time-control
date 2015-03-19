@@ -36,7 +36,15 @@ public class CheckedException extends Exception implements ManagedException
 	private static final long serialVersionUID = 1L;
 
 	/** */
-	private final ExceptionContext context;
+	private ExceptionContext context;
+
+	/**
+	 * {@link CheckedException} zero-arg bean constructor for JSON-RPC
+	 */
+	public CheckedException()
+	{
+		// empty
+	}
 
 	/**
 	 * {@link CheckedException} constructor

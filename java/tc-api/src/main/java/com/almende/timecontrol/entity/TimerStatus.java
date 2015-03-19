@@ -24,16 +24,12 @@ import io.coala.json.dynabean.DynaBean;
 import io.coala.json.dynabean.DynaBean.BeanWrapper;
 import io.coala.util.JsonUtil;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-import org.aeonbits.owner.Config;
 
 import com.almende.timecontrol.TimeControl;
 import com.fasterxml.jackson.core.TreeNode;
@@ -45,33 +41,22 @@ import com.fasterxml.jackson.core.TreeNode;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-@BeanWrapper(comparableOn = TimeControl.TIMER_KEY)
-public interface TimerStatus extends Comparable<TimerStatus>, Config
+@BeanWrapper(comparableOn = TimeControl.CONFIG_KEY)
+public interface TimerStatus extends Comparable<TimerStatus> // , Accessible
 {
 
 	/**
 	 * @return
 	 */
-	@Key(TimeControl.TIMER_KEY)
-	TimerConfig timer();
+	// @Key(TimeControl.CONFIG_KEY)
+	TimerConfig config();
 
 	/**
 	 * @return the {@link ClockConfig}s currently managed by the
 	 *         {@link #timer()}
 	 */
-	@Key(TimeControl.CLOCKS_KEY)
-	List<ClockConfig> clocks();
-
-	/**
-	 * @return the {@link SlaveStatus}s of {@link SlaveConfig}s currently
-	 *         managed by the {@link #timer()}
-	 */
-	@Key(TimeControl.SLAVES_KEY)
-	List<SlaveStatus> slaves();
-
-	/** the callback {@link URI}s for the listeners of the {@link #timer()} */
-	@Key(TimeControl.LISTENERS_KEY)
-	List<URI> listeners();
+	// @Key(TimeControl.CLOCKS_KEY)
+	List<ClockStatus> clocks();
 
 	/**
 	 * {@link Builder}
@@ -108,32 +93,21 @@ public interface TimerStatus extends Comparable<TimerStatus>, Config
 		public static Builder fromJSON(final TreeNode tree,
 				final Properties... imports)
 		{
-			return new Builder(imports)
-					.withTimer(tree.get(TimeControl.TIMER_KEY))
-					.withClocks(tree.get(TimeControl.CLOCKS_KEY))
-					.withSlaves(tree.get(TimeControl.SLAVES_KEY));
+			return new Builder(imports).withConfig(
+					tree.get(TimeControl.CONFIG_KEY)).withClocks(
+					tree.get(TimeControl.CLOCKS_KEY));
 		}
 
 		/**
-		 * @param timer the {@link TimerConfig}
+		 * @param config the {@link TimerConfig}
 		 * @param imports optional property defaults
 		 * @return the new {@link Builder}
 		 */
-		public static Builder fromTimer(final TimerConfig timer,
+		public static Builder fromConfig(final TimerConfig config,
 				final Properties... imports)
 		{
-			return new Builder(imports).withTimer(timer);
+			return new Builder(imports).withConfig(config);
 		}
-
-		/** FIXME replace by a natural ordering, using Comparable<> interface */
-		private static final Comparator<SlaveStatus> SLAVE_STATUS_COMPARATOR = new Comparator<SlaveStatus>()
-		{
-			@Override
-			public int compare(final SlaveStatus o1, final SlaveStatus o2)
-			{
-				return o1.slave().id().compareTo(o2.slave().id());
-			}
-		};
 
 		/**
 		 * {@link Builder} constructor
@@ -145,16 +119,16 @@ public interface TimerStatus extends Comparable<TimerStatus>, Config
 			super(imports);
 		}
 
-		public Builder withTimer(final TreeNode timer)
+		public Builder withConfig(final TreeNode timer)
 		{
 			if (timer == null)
 				return this;
-			return withTimer(JsonUtil.valueOf(timer, TimerConfig.class));
+			return withConfig(JsonUtil.valueOf(timer, TimerConfig.class));
 		}
 
-		public Builder withTimer(final TimerConfig timer)
+		public Builder withConfig(final TimerConfig timer)
 		{
-			with(TimeControl.TIMER_KEY, timer);
+			with(TimeControl.CONFIG_KEY, timer);
 			return this;
 		}
 
@@ -168,10 +142,10 @@ public interface TimerStatus extends Comparable<TimerStatus>, Config
 					withClocks(clocks.get(i));
 				return this;
 			}
-			return withClocks(JsonUtil.valueOf(clocks, ClockConfig.class));
+			return withClocks(JsonUtil.valueOf(clocks, ClockStatus.class));
 		}
 
-		public Builder withClocks(final ClockConfig... clocks)
+		public Builder withClocks(final ClockStatus... clocks)
 		{
 			if (clocks == null || clocks.length == 0)
 				return this;
@@ -180,95 +154,20 @@ public interface TimerStatus extends Comparable<TimerStatus>, Config
 		}
 
 		@SuppressWarnings("unchecked")
-		public Builder withClocks(final Collection<ClockConfig> clocks)
+		public Builder withClocks(final Collection<ClockStatus> clocks)
 		{
 			Object value = get(TimeControl.CLOCKS_KEY, Object.class);
 			if (value == null)
 			{
-				value = new TreeSet<ClockConfig>();
+				value = new TreeSet<ClockStatus>();
 				with(TimeControl.CLOCKS_KEY, value);
 			}
 
 			if (clocks != null && clocks.size() != 0)
 			{
-				final SortedSet<ClockConfig> set = (SortedSet<ClockConfig>) value;
-				for (ClockConfig clock : clocks)
+				final SortedSet<ClockStatus> set = (SortedSet<ClockStatus>) value;
+				for (ClockStatus clock : clocks)
 					set.add(clock);
-			}
-			return this;
-		}
-
-		public Builder withSlaves(final TreeNode slaves)
-		{
-			if (slaves == null)
-				return this;
-			if (slaves.isArray())
-			{
-				for (int i = 0; i < slaves.size(); i++)
-					withSlaves(slaves.get(i));
-				return this;
-			}
-			return withSlaves(JsonUtil.valueOf(slaves, SlaveStatus.class));
-		}
-
-		public Builder withSlaves(final SlaveStatus... slaves)
-		{
-			if (slaves == null || slaves.length == 0)
-				return this;
-
-			return withSlaves(Arrays.asList(slaves));
-		}
-
-		/**
-		 * @param values
-		 * @return
-		 */
-		public Builder withSlaves(final Collection<SlaveStatus> slaves)
-		{
-			Object value = get(TimeControl.SLAVES_KEY, Object.class);
-			if (value == null)
-			{
-				value = new TreeSet<SlaveStatus>(SLAVE_STATUS_COMPARATOR);
-				with(TimeControl.SLAVES_KEY, value);
-			}
-			if (slaves != null && slaves.size() != 0)
-			{
-				@SuppressWarnings("unchecked")
-				final SortedSet<SlaveStatus> set = (SortedSet<SlaveStatus>) value;
-				for (SlaveStatus slave : slaves)
-					set.add(slave);
-			}
-			return this;
-		}
-
-		public Builder withListeners(final TreeNode json)
-		{
-			if (json == null)
-				return this;
-			if (json.isArray())
-			{
-				for (int i = 0; i < json.size(); i++)
-					withListeners(json.get(i));
-				return this;
-			}
-			return withListeners(JsonUtil.valueOf(json, URI.class));
-		}
-
-		@SuppressWarnings("unchecked")
-		public Builder withListeners(final URI... uris)
-		{
-			Object value = get(TimeControl.LISTENERS_KEY, Object.class);
-			if (value == null)
-			{
-				value = new TreeSet<URI>();
-				with(TimeControl.LISTENERS_KEY, value);
-			}
-
-			if (uris != null && uris.length != 0)
-			{
-				final SortedSet<URI> list = (SortedSet<URI>) value;
-				for (URI uri : uris)
-					list.add(uri);
 			}
 			return this;
 		}

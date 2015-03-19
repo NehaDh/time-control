@@ -27,6 +27,7 @@ import io.coala.util.JsonUtil;
 
 import java.util.Properties;
 
+import org.aeonbits.owner.Accessible;
 import org.aeonbits.owner.Mutable;
 import org.joda.time.Interval;
 
@@ -45,7 +46,7 @@ import com.fasterxml.jackson.core.TreeNode;
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
 @BeanWrapper(comparableOn = TimeControl.ID_KEY)
-public interface ClockConfig extends Comparable<ClockConfig>, Mutable
+public interface ClockConfig extends Comparable<ClockConfig>, Mutable, Accessible
 {
 
 	/** @return the {@link ID} of this {@link ClockConfig} */

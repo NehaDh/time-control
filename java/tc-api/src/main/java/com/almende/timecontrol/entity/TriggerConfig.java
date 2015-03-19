@@ -27,39 +27,30 @@ import io.coala.util.JsonUtil;
 
 import java.util.Properties;
 
-import org.aeonbits.owner.Config;
-
 import com.almende.timecontrol.TimeControl;
+import com.almende.timecontrol.time.RecurrenceRule;
 import com.fasterxml.jackson.core.TreeNode;
 
 /**
- * {@link Error} is an extension of the <a
- * href="http://www.jsonrpc.org/specification#error_object">JSON-RPC Error
- * Object</a>
+ * {@link TriggerConfig}
  * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
 @BeanWrapper(comparableOn = TimeControl.ID_KEY)
-public interface Error extends Comparable<Error>, Config
+public interface TriggerConfig extends Comparable<TriggerConfig> // , Accessible
 {
 
-	/** @return the {@link ID} of this {@link Error} */
-	@Key(TimeControl.ID_KEY)
+	/** @return the {@link ID} of this {@link TriggerConfig} */
+	// @Key(TimeControl.ID_KEY)
 	ID id();
 
-	/** source of the error, or {@code null} for unknown */
-	SlaveConfig.ID source();
-
-	/** JSON-RPC error code, see http://www.jsonrpc.org/specification */
-	Integer code();
-
-	/** (localized) error message */
-	String message();
-
-	/** error data, e.g. stack trace */
-	String data();
+	/**
+	 * @return
+	 */
+	// @Key(TimeControl.RECURRENCE_KEY)
+	RecurrenceRule recurrence();
 
 	/**
 	 * {@link ID}
@@ -71,9 +62,9 @@ public interface Error extends Comparable<Error>, Config
 	class ID extends Identifier<String>
 	{
 		/** @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD */
-		public static ID valueOf(final String value)
+		public static ID valueOf(final String json)
 		{
-			return Identifier.valueOf(value, ID.class);
+			return Identifier.valueOf(json, ID.class);
 		}
 	}
 
@@ -84,7 +75,7 @@ public interface Error extends Comparable<Error>, Config
 	 * @version $Id$
 	 * @author <a href="mailto:rick@almende.org">Rick</a>
 	 */
-	class Builder extends DynaBean.Builder<Error, Builder>
+	class Builder extends DynaBean.Builder<TriggerConfig, Builder>
 	{
 
 		/**
@@ -97,7 +88,7 @@ public interface Error extends Comparable<Error>, Config
 		public static Builder fromJSON(final String json,
 				final Properties... imports)
 		{
-			return fromJSON(JsonUtil.valueOf(json));
+			return fromJSON(JsonUtil.valueOf(json), imports);
 		}
 
 		/**
@@ -110,7 +101,8 @@ public interface Error extends Comparable<Error>, Config
 		public static Builder fromJSON(final TreeNode tree,
 				final Properties... imports)
 		{
-			return new Builder(imports).withID(tree.get(TimeControl.ID_KEY));
+			return new Builder(imports).withID(tree.get(TimeControl.ID_KEY))
+					.withRecurrence(tree.get(TimeControl.RECURRENCE_KEY));
 		}
 
 		/**
@@ -124,6 +116,16 @@ public interface Error extends Comparable<Error>, Config
 			return new Builder(imports).withID(ID.valueOf(id));
 		}
 
+		/**
+		 * {@link Builder} constructor
+		 * 
+		 * @param imports optional property defaults
+		 */
+		public Builder(final Properties... imports)
+		{
+			super(imports);
+		}
+
 		public Builder withID(final TreeNode id)
 		{
 			return withID(JsonUtil.valueOf(id, ID.class));
@@ -135,15 +137,17 @@ public interface Error extends Comparable<Error>, Config
 			return this;
 		}
 
-		/**
-		 * {@link Builder} constructor, to be extended by a public zero-arg
-		 * constructor in concrete sub-types
-		 */
-		public Builder(final Properties... imports)
+		public Builder withRecurrence(final TreeNode recurrence)
 		{
-			super(imports);
+			return withRecurrence(JsonUtil.valueOf(recurrence,
+					RecurrenceRule.class));
+		}
+
+		public Builder withRecurrence(final RecurrenceRule recurrence)
+		{
+			with(TimeControl.RECURRENCE_KEY, recurrence);
+			return this;
 		}
 
 	}
-
 }
