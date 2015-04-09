@@ -28,7 +28,7 @@ import io.coala.util.JsonUtil;
 import java.util.Properties;
 
 import com.almende.timecontrol.TimeControl;
-import com.almende.timecontrol.time.RecurrenceRule;
+import com.almende.timecontrol.time.TriggerPattern;
 import com.fasterxml.jackson.core.TreeNode;
 
 /**
@@ -50,8 +50,11 @@ public interface TriggerConfig extends Comparable<TriggerConfig> // , Accessible
 	 * @return
 	 */
 	// @Key(TimeControl.RECURRENCE_KEY)
-	RecurrenceRule recurrence();
+	TriggerPattern pattern();
 
+	/** @return the ordinal value by which to replicably order triggers from varying sources */
+	//String sourceOrdinal();
+	
 	/**
 	 * {@link ID}
 	 * 
@@ -102,7 +105,7 @@ public interface TriggerConfig extends Comparable<TriggerConfig> // , Accessible
 				final Properties... imports)
 		{
 			return new Builder(imports).withID(tree.get(TimeControl.ID_KEY))
-					.withRecurrence(tree.get(TimeControl.RECURRENCE_KEY));
+					.withPattern(tree.get(TimeControl.RECURRENCE_KEY));
 		}
 
 		/**
@@ -137,15 +140,15 @@ public interface TriggerConfig extends Comparable<TriggerConfig> // , Accessible
 			return this;
 		}
 
-		public Builder withRecurrence(final TreeNode recurrence)
+		public Builder withPattern(final TreeNode pattern)
 		{
-			return withRecurrence(JsonUtil.valueOf(recurrence,
-					RecurrenceRule.class));
+			return withPattern(JsonUtil.valueOf(pattern,
+					TriggerPattern.class));
 		}
 
-		public Builder withRecurrence(final RecurrenceRule recurrence)
+		public Builder withPattern(final TriggerPattern pattern)
 		{
-			with(TimeControl.RECURRENCE_KEY, recurrence);
+			with(TimeControl.RECURRENCE_KEY, pattern);
 			return this;
 		}
 

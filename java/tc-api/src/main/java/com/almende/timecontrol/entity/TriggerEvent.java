@@ -47,14 +47,14 @@ public interface TriggerEvent extends Comparable<TriggerEvent>
 	/** @return the {@link ID} of this {@link TriggerEvent} */
 	ID id();
 
-	/** the simulated time {@link Instant} when this {@link TriggerEvent} occurs */
-	Duration time();
-
 	/**
 	 * the {@link TriggerConfig.ID} of the {@link TriggerConfig} that generated
 	 * this {@link TriggerEvent}
 	 */
 	TriggerConfig.ID triggerId();
+
+	/** the simulated time {@link Instant} when this {@link TriggerEvent} occurs */
+	Duration time();
 
 	/**
 	 * @return {@code true} iff this is the last {@link TriggerEvent} created by its
@@ -111,7 +111,7 @@ public interface TriggerEvent extends Comparable<TriggerEvent>
 		public static Builder fromJSON(final TreeNode tree,
 				final Properties... imports)
 		{
-			return new Builder(imports).id(tree.get(TimeControl.ID_KEY));
+			return new Builder(imports).withId(tree.get(TimeControl.ID_KEY));
 		}
 
 		/**
@@ -122,7 +122,7 @@ public interface TriggerEvent extends Comparable<TriggerEvent>
 		public static Builder fromID(final String id,
 				final Properties... imports)
 		{
-			return new Builder(imports).id(ID.valueOf(id));
+			return new Builder(imports).withId(ID.valueOf(id));
 		}
 
 		/**
@@ -134,30 +134,30 @@ public interface TriggerEvent extends Comparable<TriggerEvent>
 			super(imports);
 		}
 
-		public Builder id(final TreeNode id)
+		public Builder withId(final TreeNode id)
 		{
-			return id(JsonUtil.valueOf(id, ID.class));
+			return withId(JsonUtil.valueOf(id, ID.class));
 		}
 
-		public Builder id(final ID id)
+		public Builder withId(final ID id)
 		{
 			with(TimeControl.ID_KEY, id);
 			return this;
 		}
 
-		public Builder time(final Duration time)
+		public Builder withTime(final Duration time)
 		{
 			with(TimeControl.TIME_KEY, time);
 			return this;
 		}
 
-		public Builder triggerID(final TriggerConfig.ID triggerId)
+		public Builder withTriggerID(final TriggerConfig.ID triggerId)
 		{
 			with(TimeControl.TRIGGER_ID_KEY, triggerId);
 			return this;
 		}
 
-		public Builder lastCall(final boolean lastCall)
+		public Builder withLastCall(final boolean lastCall)
 		{
 			with(TimeControl.LAST_CALL_KEY, lastCall);
 			return this;

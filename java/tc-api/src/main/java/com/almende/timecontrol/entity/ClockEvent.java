@@ -25,68 +25,42 @@ import io.coala.json.dynabean.DynaBean;
 import io.coala.json.dynabean.DynaBean.BeanWrapper;
 import io.coala.util.JsonUtil;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.Properties;
 
-import org.aeonbits.owner.Accessible;
-import org.aeonbits.owner.Mutable;
 import org.joda.time.Interval;
 
+import rx.Observer;
+
 import com.almende.timecontrol.TimeControl;
+import com.almende.timecontrol.entity.ClockConfig.Status;
 import com.almende.timecontrol.time.Duration;
 import com.almende.timecontrol.time.Rate;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.JsonParser;
+import com.eaio.uuid.UUID;
 import com.fasterxml.jackson.core.TreeNode;
 
 /**
- * {@link ClockConfig} configuration
+ * {@link ClockEvent}
  * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
+ * 
+ * @see java.beans.PropertyChangeEvent
  */
 @BeanWrapper(comparableOn = TimeControl.ID_KEY)
-public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
-		Accessible
+public interface ClockEvent extends Comparable<ClockEvent>
 {
 
-	/** @return the {@link ID} of this {@link ClockConfig} */
-	@Key(TimeControl.ID_KEY)
+	/** @return the {@link ID} of this {@link ClockEvent} */
 	ID id();
 
-	/**
-	 * @return the {@link ID} of the original forking (parent)
-	 *         {@link ClockConfig}, or {@code null} if this is the
-	 *         {@link Replication}'s root {@link ClockConfig}
-	 */
-	@Key(TimeControl.FORK_PARENT_ID_KEY)
-	@DefaultValue("")
-	ID forkParentID();
+	/** @return the {@link ClockConfig.ID} of the source {@link ClockConfig} */
+	ClockConfig.ID clockId();
 
-	/**
-	 * @return the simulated time when this clock was forked as relative
-	 *         duration since {@link Interval#getStart()
-	 *         Replication#.interval.getStart()}, so at the start of the
-	 *         replication {@code time.equals(Duration.ZERO)==true} and at the
-	 *         end of the replication
-	 *         {@code time.equals(interval.toDuration())==true}
-	 */
-	@Key(TimeControl.FORK_TIME_KEY)
-	@DefaultValue("")
-	Duration forkTime();
-
-	/** @return the {@link Status} of this {@link ClockData} */
-	@Key(TimeControl.STATUS_KEY)
-	@DefaultValue("")
+	/** @return the {@link Status} of the source {@link ClockConfig} */
 	Status status();
-
-	/**
-	 * @return the (last occurred) {@link Error} of this {@link ClockConfig} if
-	 *         {@link #status} {@code ==} {@link ClockStatus#FAILED}, or
-	 *         {@code null} if none
-	 */
-	// @Key(TimeControl.ERROR_KEY)
-	// Error error();
 
 	/**
 	 * @return the rate at which to proceed w.r.t. wall-clock time. For example:
@@ -103,8 +77,6 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 	 *         <dd>"slower-than-real-time" speed</dd>
 	 *         </dl>
 	 */
-	@Key(TimeControl.DRAG_KEY)
-	// @DefaultValue("")
 	Rate drag();
 
 	/**
@@ -114,8 +86,6 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 	 *         the end of the simulation
 	 *         {@code time.equals(interval.toDuration())==true}
 	 */
-	@Key(TimeControl.TIME_KEY)
-	// @DefaultValue("")
 	Duration time();
 
 	/**
@@ -126,65 +96,27 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 	 *         default = {@link Interval#toDuration()
 	 *         Replication.interval#toDuration()}, default = {@code null}
 	 */
-	@Key(TimeControl.UNTIL_KEY)
-	// @DefaultValue("")
 	Duration until();
 
 	/**
-	 * {@linkplain Status} of a {@linkplain ClockConfig} with JSON
-	 * {@linkplain #value()} tokens. Note that {@link JsonParser} accepts
-	 * {@linkplain #ordinal()} as well.
+	 * {@link ID}
 	 * 
 	 * @date $Date$
 	 * @version $Id$
 	 * @author <a href="mailto:rick@almende.org">Rick</a>
 	 */
-	enum Status
+	class ID extends Identifier<UUID>
 	{
-		/** */
-		WAITING("waiting"),
-
-		/** */
-		RUNNING("running"),
-
-		/** */
-		COMPLETED("completed"),
-
-		/** */
-		FAILED("failed"),
-
-		/** for JSON compatibility */
-		// _UNDEFINED("undefined"),
-
-		;
-
-		/** */
-		private final String jsonValue;
-
-		/**
-		 * {@link DurationType} enum constant constructor
-		 * 
-		 * @param jsonValue
-		 */
-		private Status(final String jsonValue)
+		public ID()
 		{
-			this.jsonValue = jsonValue;
+			this(new UUID());
 		}
 
-		@JsonValue
-		private final String value()
+		public ID(final UUID value)
 		{
-			return this.jsonValue;
+			setValue(value);
 		}
-	}
 
-	/**
-	 * @date $Date$
-	 * @version $Id$
-	 * @author <a href="mailto:rick@almende.org">Rick</a>
-	 */
-	class ID extends Identifier<String>
-	{
 		/** @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD */
 		public static ID valueOf(final String value)
 		{
@@ -199,7 +131,7 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 	 * @version $Id$
 	 * @author <a href="mailto:rick@almende.org">Rick</a>
 	 */
-	class Builder extends DynaBean.Builder<ClockConfig, Builder>
+	class Builder extends DynaBean.Builder<ClockEvent, Builder>
 	{
 
 		/**
@@ -226,27 +158,28 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 				final Properties... imports)
 		{
 			return new Builder(imports).withId(tree.get(TimeControl.ID_KEY))
-					.withForkParentID(tree.get(TimeControl.FORK_PARENT_ID_KEY))
-					.withForkTime(tree.get(TimeControl.FORK_TIME_KEY))
-					.withDrag(tree.get(TimeControl.DRAG_KEY))
+					.withClockId(tree.get(TimeControl.CLOCK_ID_KEY))
 					.withStatus(tree.get(TimeControl.STATUS_KEY))
+					.withDrag(tree.get(TimeControl.DRAG_KEY))
 					.withTime(tree.get(TimeControl.TIME_KEY))
 					.withUntil(tree.get(TimeControl.UNTIL_KEY));
 		}
 
 		/**
-		 * @param id the JSON-formatted identifier value
+		 * @param oldConfig
+		 * @param newConfig
 		 * @param imports optional property defaults
 		 * @return the new {@link Builder}
 		 */
-		public static Builder forID(final String id,
+		public static Builder fromClockId(final ClockConfig.ID clockId,
 				final Properties... imports)
 		{
-			return new Builder(imports).withId(ID.valueOf(id));
+			return new Builder(imports).withId(new ID()).withClockId(clockId);
 		}
 
 		/**
-		 * {@link Builder} constructor
+		 * {@link Builder} constructor, to be extended by a public zero-arg
+		 * constructor in concrete sub-types
 		 */
 		public Builder(final Properties... imports)
 		{
@@ -264,26 +197,14 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 			return this;
 		}
 
-		public Builder withForkParentID(final TreeNode tree)
+		public Builder withClockId(final TreeNode id)
 		{
-			return withForkParentID(JsonUtil
-					.valueOf(tree, ClockConfig.ID.class));
+			return withClockId(JsonUtil.valueOf(id, ClockConfig.ID.class));
 		}
 
-		public Builder withForkParentID(final ClockConfig.ID forkParentID)
+		public Builder withClockId(final ClockConfig.ID id)
 		{
-			with(TimeControl.FORK_PARENT_ID_KEY, forkParentID);
-			return this;
-		}
-
-		public Builder withForkTime(final TreeNode tree)
-		{
-			return withForkTime(JsonUtil.valueOf(tree, Duration.class));
-		}
-
-		public Builder withForkTime(final Duration forkTime)
-		{
-			with(TimeControl.FORK_TIME_KEY, forkTime);
+			with(TimeControl.CLOCK_ID_KEY, id);
 			return this;
 		}
 
@@ -329,6 +250,40 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 		{
 			with(TimeControl.UNTIL_KEY, until);
 			return this;
+		}
+	}
+
+	/**
+	 * @param events
+	 * @return
+	 */
+	class PropertyChangeListenerFilter
+	{
+		public static PropertyChangeListener forObserver(
+				final ClockConfig.ID clockID, final Observer<ClockEvent> events)
+		{
+			return new PropertyChangeListener()
+			{
+				@Override
+				public void propertyChange(final PropertyChangeEvent evt)
+				{
+					final Builder builder = ClockEvent.Builder
+							.fromClockId(clockID);
+					if (evt.getPropertyName().equals(TimeControl.STATUS_KEY))
+						events.onNext(builder.withStatus(
+								(ClockConfig.Status) evt.getNewValue()).build());
+					else if (evt.getPropertyName().equals(TimeControl.TIME_KEY))
+						events.onNext(builder.withTime(
+								(Duration) evt.getNewValue()).build());
+					else if (evt.getPropertyName()
+							.equals(TimeControl.UNTIL_KEY))
+						events.onNext(builder.withUntil(
+								(Duration) evt.getNewValue()).build());
+					else if (evt.getPropertyName().equals(TimeControl.DRAG_KEY))
+						events.onNext(builder
+								.withDrag((Rate) evt.getNewValue()).build());
+				}
+			};
 		}
 	}
 }

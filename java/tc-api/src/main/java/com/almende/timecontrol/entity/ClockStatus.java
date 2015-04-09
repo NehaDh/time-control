@@ -24,12 +24,10 @@ import io.coala.json.dynabean.DynaBean;
 import io.coala.json.dynabean.DynaBean.BeanWrapper;
 import io.coala.util.JsonUtil;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
-import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.almende.timecontrol.TimeControl;
@@ -42,8 +40,9 @@ import com.fasterxml.jackson.core.TreeNode;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-@BeanWrapper(comparableOn = TimeControl.CONFIG_KEY)
-public interface ClockStatus extends Comparable<ClockStatus> // , Accessible
+@BeanWrapper
+// (comparableOn = TimeControl.CONFIG_KEY)
+public interface ClockStatus // extends Comparable<ClockStatus> , Accessible
 {
 
 	/**
@@ -52,7 +51,7 @@ public interface ClockStatus extends Comparable<ClockStatus> // , Accessible
 	ClockConfig config();
 
 	/** the callback {@link URI}s for the listeners of the {@link #timer()} */
-	List<URI> subscribers();
+	// List<URI> subscribers();
 
 	/**
 	 * @return the {@link SlaveStatus}s of {@link SlaveConfig}s currently
@@ -95,10 +94,11 @@ public interface ClockStatus extends Comparable<ClockStatus> // , Accessible
 		public static Builder fromJSON(final TreeNode tree,
 				final Properties... imports)
 		{
-			return new Builder(imports)
-					.withConfig(tree.get(TimeControl.CONFIG_KEY))
-					.withTriggers(tree.get(TimeControl.TRIGGERS_KEY))
-					.withSubscribers(tree.get(TimeControl.SUBSCRIBERS_KEY));
+			return new Builder(imports).withConfig(
+					tree.get(TimeControl.CONFIG_KEY)).withTriggers(
+					tree.get(TimeControl.TRIGGERS_KEY))
+			// .withSubscribers(tree.get(TimeControl.SUBSCRIBERS_KEY))
+			;
 		}
 
 		/**
@@ -162,20 +162,17 @@ public interface ClockStatus extends Comparable<ClockStatus> // , Accessible
 			Object value = get(TimeControl.CLOCKS_KEY, Object.class);
 			if (value == null)
 			{
+				// FIXME use more efficient collection, e.g. arraylist, hashset?
 				value = new TreeSet<TriggerStatus>();
 				with(TimeControl.CLOCKS_KEY, value);
 			}
 
-			if (clocks != null && clocks.size() != 0)
-			{
-				final SortedSet<TriggerStatus> set = (SortedSet<TriggerStatus>) value;
-				for (TriggerStatus clock : clocks)
-					set.add(clock);
-			}
+			if (clocks != null)
+				((Collection<TriggerStatus>) value).addAll(clocks);
 			return this;
 		}
 
-		public Builder withSubscribers(final TreeNode json)
+/*		public Builder withSubscribers(final TreeNode json)
 		{
 			if (json == null)
 				return this;
@@ -188,8 +185,16 @@ public interface ClockStatus extends Comparable<ClockStatus> // , Accessible
 			return withSubscribers(JsonUtil.valueOf(json, URI.class));
 		}
 
-		@SuppressWarnings("unchecked")
 		public Builder withSubscribers(final URI... uris)
+		{
+			if (uris == null || uris.length == 0)
+				return this;
+
+			return withSubscribers(Arrays.asList(uris));
+		}
+
+		@SuppressWarnings("unchecked")
+		public Builder withSubscribers(final Collection<URI> uris)
 		{
 			Object value = get(TimeControl.SUBSCRIBERS_KEY, Object.class);
 			if (value == null)
@@ -198,7 +203,7 @@ public interface ClockStatus extends Comparable<ClockStatus> // , Accessible
 				with(TimeControl.SUBSCRIBERS_KEY, value);
 			}
 
-			if (uris != null && uris.length != 0)
+			if (!uris.isEmpty())
 			{
 				final SortedSet<URI> list = (SortedSet<URI>) value;
 				for (URI uri : uris)
@@ -206,7 +211,7 @@ public interface ClockStatus extends Comparable<ClockStatus> // , Accessible
 			}
 			return this;
 		}
-
+*/
 	}
 
 }

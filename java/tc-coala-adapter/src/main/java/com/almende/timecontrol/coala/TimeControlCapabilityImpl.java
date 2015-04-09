@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 
 import javax.inject.Inject;
 
@@ -55,14 +56,16 @@ import rx.Observer;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
-import com.almende.timecontrol.TimeControl;
+import com.almende.timecontrol.api.eve.EveAgentAPI;
 import com.almende.timecontrol.entity.ClockConfig;
 import com.almende.timecontrol.entity.ClockConfig.Status;
+import com.almende.timecontrol.entity.ClockEvent;
 import com.almende.timecontrol.entity.TimerConfig;
 import com.almende.timecontrol.entity.TriggerConfig;
+import com.almende.timecontrol.entity.TriggerEvent;
 import com.almende.timecontrol.eve.TimeManagerClientAgent;
 import com.almende.timecontrol.time.Duration;
-import com.almende.timecontrol.time.RecurrenceRule;
+import com.almende.timecontrol.time.TriggerPattern;
 
 /**
  * {@link TimeControlCapabilityImpl}
@@ -84,7 +87,7 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 			.getLogger(TimeControlCapabilityImpl.class);
 
 	/** */
-	private final TimeManagerClientAgent slave;
+	private final TimeManagerClientAgent timeManagerClient;
 
 	/** */
 	private final ReplicationConfig config;
@@ -104,13 +107,13 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 			.create();
 
 	/** */
-	private final TimerConfig timer;
+	private final TimerConfig timerConfig;
 
 	/** */
-	private volatile SimTime time;
+	private volatile SimTime time = SimTime.ZERO;
 
 	/** */
-	private volatile ClockConfig clock;
+	private volatile ClockEvent clock = null;
 
 	/**
 	 * {@link TimeControlCapabilityImpl} constructor
@@ -124,7 +127,6 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 		this.config = getBinder().inject(ReplicationConfig.class);
 		this.newTime = this.config.newTime();
 		this.baseTimeUnit = this.config.getBaseTimeUnit();
-		setTime(Duration.ZERO);
 
 		// ConfigFactory.create(SlaveConfig.class);
 		// final SlaveConfig slaveConfig =
@@ -144,34 +146,37 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 
 		final String clientID = binder.getID() + "-timer";// this.config.getClockName();
 		final String timerID = this.config.getModelName();
-		this.slave = TimeManagerClientAgent.getInstance(timerID, clientID);
-		this.slave.events().subscribe(new Observer<String>()
-		{
-			@Override
-			public void onCompleted()
-			{
-				LOG.info("Proxy agent events completed");
-			}
-
-			@Override
-			public void onError(final Throwable e)
-			{
-				LOG.error("Problem observing proxy events", e);
-			}
-
-			@Override
-			public void onNext(final String event)
-			{
-				LOG.info("Proxy status: " + event);
-			}
-		});
-		this.slave.observeClock(ClockConfig.ID.valueOf(clientID)).subscribe(
-				new Observer<ClockConfig>()
+		this.timeManagerClient = TimeManagerClientAgent.getInstance(timerID,
+				clientID);
+		this.timeManagerClient.events().subscribe(
+				new Observer<EveAgentAPI.AgentEvent>()
 				{
 					@Override
 					public void onCompleted()
 					{
-						LOG.info("Clock status completed");
+						LOG.warn("Client agent events completed");
+					}
+
+					@Override
+					public void onError(final Throwable e)
+					{
+						LOG.error("Problem observing proxy events", e);
+					}
+
+					@Override
+					public void onNext(final EveAgentAPI.AgentEvent event)
+					{
+						LOG.info("Proxy status: " + event);
+					}
+				});
+		final CountDownLatch clockReadyLatch = new CountDownLatch(1);
+		this.timeManagerClient.observeClock(ClockConfig.ID.valueOf(clientID))
+				.subscribe(new Observer<ClockEvent>()
+				{
+					@Override
+					public void onCompleted()
+					{
+						LOG.warn("Clock status completed");
 					}
 
 					@Override
@@ -181,23 +186,19 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 					}
 
 					@Override
-					public void onNext(final ClockConfig update)
+					public void onNext(final ClockEvent update)
 					{
-						synchronized (statusUpdates)
-						{
-							setTime(update.time());
-							clock = update;
-						}
+						setClock(update);
+						clockReadyLatch.countDown();
 					}
 				});
 		// may be redundant
-		final TimerConfig timer = ConfigFactory.create(TimerConfig.class);
-		LOG.trace("initializing timer with config: " + timer);
-		timer.setProperty(TimeControl.ID_KEY, timerID);
-		this.slave.initialize(timer);
-		this.timer = this.slave.getTimerConfig();
-		this.clock = this.timer.clock();
-		LOG.trace("Connected to timer with config: " + this.timer);
+		final TimerConfig config = ConfigFactory.create(TimerConfig.class);
+		LOG.trace("Initializing timer with config: " + config);
+		// timer.setProperty(TimeControl.ID_KEY, timerID);
+		this.timeManagerClient.setTimerConfig(config);
+		this.timerConfig = this.timeManagerClient.getTimerConfig();
+		LOG.trace("Initialized timer with config: " + this.timerConfig);
 	}
 
 	/** */
@@ -254,6 +255,15 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 		return this.timeUpdates.asObservable();
 	}
 
+	protected void setClock(final ClockEvent clock)
+	{
+		synchronized (this.statusUpdates)
+		{
+			this.clock = clock;
+		}
+		setTime(clock.time());
+	}
+
 	protected synchronized void setTime(final Duration time)
 	{
 		setTime(this.newTime.create(time.nanos(), TimeUnit.NANOS).toUnit(
@@ -262,6 +272,9 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 
 	protected synchronized void setTime(final SimTime time)
 	{
+		if (time.isBefore(this.time))
+			throw CoalaExceptionFactory.VALUE_NOT_ALLOWED.createRuntime("time",
+					time, "can't rewind time, currently: " + this.time);
 		this.time = time;
 		this.timeUpdates.onNext(time);
 	}
@@ -286,7 +299,7 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 			final SimTime instant = this.newTime
 					.create(trigger.getStartTime().toUnit(this.baseTimeUnit)
 							.doubleValue(), this.baseTimeUnit);
-			final RecurrenceRule rule = /*new RecurrenceRule(trigger, trigger
+			final TriggerPattern rule = /*new RecurrenceRule(trigger, trigger
 										.getInstants().map(
 										new Func1<io.coala.time.Instant<?>, Instant>()
 										{
@@ -298,13 +311,12 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 											.convertFrom(t).longValue());
 										}
 										}));*/
-			new RecurrenceRule(instant.getIsoTime().getTime());
+			new TriggerPattern(instant.getIsoTime().getTime());
 			final TriggerConfig trig = TriggerConfig.Builder.fromID(id)
-					.withRecurrence(rule).build();
+					.withPattern(rule).build();
 			PENDING_JOBS.put(trig.id(), job);
-			this.slave.updateTrigger(trig);
-			this.slave.observeTrigger(trig.id()).subscribe(this.jobObserver);
-
+			this.timeManagerClient.registerTrigger(rule).subscribe(
+					this.jobObserver);
 		}
 	}
 
@@ -325,7 +337,7 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public void onNext(final com.almende.timecontrol.entity.TriggerEvent job)
+		public void onNext(final TriggerEvent job)
 		{
 			setTime(job.time());
 			synchronized (PENDING_JOBS)
@@ -333,18 +345,18 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 				final Job<?> todo = job.lastCall() ? PENDING_JOBS.remove(job
 						.triggerId()) : PENDING_JOBS.get(job.triggerId());
 				if (todo == null)
-					throw new NullPointerException(
-							"UNEXPECTED: job unavailable for trigger: " + job);
-				if (!Callable.class.isAssignableFrom(todo.getClass()))
+					LOG.warn("trigger no longer available: " + job.triggerId());
+				else if (!Callable.class.isAssignableFrom(todo.getClass()))
 					throw new NullPointerException(
 							"UNEXPECTED: job not Callable: " + job.getClass());
-				try
-				{
-					((Callable<Void>) todo).call();
-				} catch (final Exception e)
-				{
-					LOG.error("Problem executing job: " + todo);
-				}
+				else
+					try
+					{
+						((Callable<Void>) todo).call();
+					} catch (final Exception e)
+					{
+						LOG.error("Problem executing job: " + todo);
+					}
 			}
 		}
 	};
@@ -356,16 +368,16 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 		{
 			final TriggerConfig.ID id = TriggerConfig.ID.valueOf(job.getID()
 					.toString());
-			this.slave.removeTrigger(id);
+			// this.timeManagerClient.unregisterTrigger(id);
 			PENDING_JOBS.remove(id);
-			return true; // FIXME get result from slave's proxy
+			return true;
 		}
 	}
 
 	@Override
 	public void start()
 	{
-		this.slave.updateClock(ClockConfig.Builder
+		this.timeManagerClient.updateClock(ClockConfig.Builder
 				.forID(this.config.getClockName()).withStatus(Status.RUNNING)
 				.build());
 	}
@@ -373,7 +385,7 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 	@Override
 	public void pause()
 	{
-		this.slave.updateClock(ClockConfig.Builder
+		this.timeManagerClient.updateClock(ClockConfig.Builder
 				.forID(this.config.getClockName()).withStatus(Status.WAITING)
 				.build());
 	}

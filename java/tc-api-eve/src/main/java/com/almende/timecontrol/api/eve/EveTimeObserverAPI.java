@@ -18,18 +18,19 @@
  */
 package com.almende.timecontrol.api.eve;
 
-import java.net.URI;
-
 import rx.Observable;
 
 import com.almende.eve.protocol.jsonrpc.annotation.Access;
 import com.almende.eve.protocol.jsonrpc.annotation.AccessType;
 import com.almende.eve.protocol.jsonrpc.annotation.Name;
+import com.almende.eve.protocol.jsonrpc.annotation.Optional;
+import com.almende.eve.protocol.jsonrpc.annotation.Sender;
 import com.almende.timecontrol.api.TimeManagerAPI;
 import com.almende.timecontrol.api.TimeObserverAPI;
 import com.almende.timecontrol.entity.ClockConfig;
+import com.almende.timecontrol.entity.ClockEvent;
 import com.almende.timecontrol.entity.TriggerEvent;
-import com.almende.timecontrol.entity.TriggerConfig;
+import com.almende.timecontrol.time.TriggerPattern;
 
 /**
  * {@link EveTimeObserverAPI} adds Eve's {@link Name} annotations to
@@ -42,27 +43,73 @@ import com.almende.timecontrol.entity.TriggerConfig;
 public interface EveTimeObserverAPI extends TimeObserverAPI, EveAgentAPI
 {
 
-	/** @see EveTimeObserverClientAPI#notifyClock(ClockConfig) */
-	@Override
-	@Access(AccessType.UNAVAILABLE)
-	Observable<ClockConfig> observeClock(ClockConfig.ID id);
-
-	@Override
-	@Access(AccessType.UNAVAILABLE)
-	void updateTrigger(TriggerConfig trigger);
-
-	/** @see #updateTrigger(TriggerConfig) */
+	/** for JSON-RPC of {@link Observable} {@link #observeClock()} */
 	@Access(AccessType.PUBLIC)
-	void updateTrigger(@Name("callbackURI") URI callbackURI,
-			@Name("trigger") TriggerConfig trigger);
+	SubscriptionID observeClockCallback(@Optional @Sender String callbackURI);
 
-	/** @see EveTimeObserverClientAPI#notifyTrigger(TriggerEvent) */
+	/**
+	 * for JSON-RPC, use method pair {@link #observeClockCallback(String)} and
+	 * {@link EveTimeObserverClientAPI#notifyClock(SubscriptionID,ClockConfig)}
+	 */
+	@Override
+	Observable<ClockEvent> observeClock();
+
+	/** for JSON-RPC of {@link Observable} {@link #observeClock(ClockConfig.ID)} */
+	@Access(AccessType.PUBLIC)
+	SubscriptionID observeClockCallback(
+			@Optional @Name("clockId") ClockConfig.ID clockId,
+			@Optional @Sender String callbackURI);
+
+	/**
+	 * for JSON-RPC, use method pair
+	 * {@link #observeClockCallback(ClockConfig.ID,String)} and
+	 * {@link EveTimeObserverClientAPI#notifyClock(SubscriptionID,ClockConfig)}
+	 */
 	@Override
 	@Access(AccessType.UNAVAILABLE)
-	Observable<TriggerEvent> observeTrigger(TriggerConfig.ID triggerId);
+	Observable<ClockEvent> observeClock(ClockConfig.ID id);
 
-	@Override
+	/**
+	 * for JSON-RPC of {@link Observable}
+	 * {@link #registerTrigger(TriggerPattern)}
+	 */
 	@Access(AccessType.PUBLIC)
-	void removeTrigger(@Name("triggerId") TriggerConfig.ID triggerId);
+	SubscriptionID registerTriggerCallback(
+			@Name("pattern") TriggerPattern pattern,
+			@Optional @Sender String callbackURI);
+
+	/**
+	 * for JSON-RPC, use method pair
+	 * {@link #registerTriggerCallback(TriggerPattern,String)} and
+	 * {@link EveTimeObserverClientAPI#notifyTrigger(SubscriptionID,TriggerEvent)}
+	 */
+	@Override
+	@Access(AccessType.UNAVAILABLE)
+	Observable<TriggerEvent> registerTrigger(TriggerPattern pattern);
+
+	/**
+	 * for JSON-RPC of {@link Observable}
+	 * {@link #registerTrigger(ClockConfig.ID,TriggerPattern)}
+	 */
+	@Access(AccessType.PUBLIC)
+	SubscriptionID registerTriggerCallback(
+			@Optional @Name("clockId") ClockConfig.ID clockId,
+			@Name("pattern") TriggerPattern pattern,
+			@Optional @Sender String callbackURI);
+
+	/**
+	 * for JSON-RPC, use method pair
+	 * {@link #registerTriggerCallback(ClockConfig.ID,TriggerPattern,String)}
+	 * and
+	 * {@link EveTimeObserverClientAPI#notifyTrigger(SubscriptionID,TriggerEvent)}
+	 */
+	@Override
+	@Access(AccessType.UNAVAILABLE)
+	Observable<TriggerEvent> registerTrigger(ClockConfig.ID clockId,
+			TriggerPattern pattern);
+
+	// @Override
+	// @Access(AccessType.PUBLIC)
+	// void unregisterTrigger(@Name("triggerId") TriggerConfig.ID triggerId);
 
 }

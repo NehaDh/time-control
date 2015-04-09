@@ -52,16 +52,15 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.ical.compat.jodatime.DateTimeIteratorFactory;
 
 /**
- * {@link RecurrenceRule} TODO test!!
+ * {@link TriggerPattern} TODO test!!
  * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-@JsonSerialize(using = RecurrenceRule.JsonSerializer.class)
-@JsonDeserialize(using = RecurrenceRule.JsonDeserializer.class)
-public class RecurrenceRule // implements JsonWrapper<String>//
-							// Iterable<Instant>
+@JsonSerialize(using = TriggerPattern.JsonSerializer.class)
+@JsonDeserialize(using = TriggerPattern.JsonDeserializer.class)
+public class TriggerPattern
 {
 	/** */
 	private static final Pattern dtStartTimePattern = Pattern
@@ -146,23 +145,23 @@ public class RecurrenceRule // implements JsonWrapper<String>//
 	}
 
 	/**
-	 * {@link RecurrenceRule} constructor for "natural" polymorphic Jackson bean
+	 * {@link TriggerPattern} constructor for "natural" polymorphic Jackson bean
 	 * deserialization
 	 * 
 	 * @see com.fasterxml.jackson.databind.deser.BeanDeserializer
 	 */
-	public RecurrenceRule(final String json)
+	public TriggerPattern(final String json)
 	{
 		this(json, parseInstantOrIntervalOrRule(json));
 	}
 
 	/**
-	 * {@link RecurrenceRule} constructor for "natural" polymorphic Jackson bean
+	 * {@link TriggerPattern} constructor for "natural" polymorphic Jackson bean
 	 * deserialization
 	 * 
 	 * @see com.fasterxml.jackson.databind.deser.BeanDeserializer
 	 */
-	public RecurrenceRule(final double absoluteInstantMS)
+	public TriggerPattern(final double absoluteInstantMS)
 	{
 		// TODO convert to default time unit (other than MILLIS)?
 		this(absoluteInstantMS, Observable.just(Instant
@@ -170,24 +169,24 @@ public class RecurrenceRule // implements JsonWrapper<String>//
 	}
 
 	/**
-	 * {@link RecurrenceRule} constructor for "natural" polymorphic Jackson bean
+	 * {@link TriggerPattern} constructor for "natural" polymorphic Jackson bean
 	 * deserialization
 	 * 
 	 * @see com.fasterxml.jackson.databind.deser.BeanDeserializer
 	 */
-	public RecurrenceRule(final int absoluteInstantMS)
+	public TriggerPattern(final int absoluteInstantMS)
 	{
 		this(absoluteInstantMS, Observable.just(Instant
 				.valueOf(absoluteInstantMS)));
 	}
 
 	/**
-	 * {@link RecurrenceRule} constructor
+	 * {@link TriggerPattern} constructor
 	 * 
 	 * @param values
 	 * @param type
 	 */
-	public RecurrenceRule(final Object value, final Observable<Instant> values)
+	public TriggerPattern(final Object value, final Observable<Instant> values)
 	{
 		this.value = value;
 		this.values = values;
@@ -261,19 +260,19 @@ public class RecurrenceRule // implements JsonWrapper<String>//
 	 * @param jsonRecurrence
 	 * @return
 	 */
-	public static RecurrenceRule valueOf(final String json)
+	public static TriggerPattern valueOf(final String json)
 	{
-		return JsonUtil.valueOf(json, RecurrenceRule.class);
+		return JsonUtil.valueOf(json, TriggerPattern.class);
 	}
 
 	/** */
 	private static final Logger LOG = LogManager
-			.getLogger(RecurrenceRule.class);
+			.getLogger(TriggerPattern.class);
 
 	public static class JsonSerializer extends
-			com.fasterxml.jackson.databind.JsonSerializer<RecurrenceRule>
+			com.fasterxml.jackson.databind.JsonSerializer<TriggerPattern>
 	{
-		public void serialize(final RecurrenceRule value,
+		public void serialize(final TriggerPattern value,
 				final JsonGenerator gen, final SerializerProvider serializers)
 				throws IOException, JsonProcessingException
 		{
@@ -283,16 +282,16 @@ public class RecurrenceRule // implements JsonWrapper<String>//
 	}
 
 	public static class JsonDeserializer extends
-			com.fasterxml.jackson.databind.JsonDeserializer<RecurrenceRule>
+			com.fasterxml.jackson.databind.JsonDeserializer<TriggerPattern>
 	{
 		@Override
-		public RecurrenceRule deserialize(final JsonParser p,
+		public TriggerPattern deserialize(final JsonParser p,
 				final DeserializationContext ctxt) throws IOException,
 				JsonProcessingException
 		{
 			LOG.trace("Deserializing " + p.getText());
-			return p.getCurrentToken().isNumeric() ? new RecurrenceRule(p
-					.getNumberValue().doubleValue()) : new RecurrenceRule(
+			return p.getCurrentToken().isNumeric() ? new TriggerPattern(p
+					.getNumberValue().doubleValue()) : new TriggerPattern(
 					p.getText());
 		}
 	}

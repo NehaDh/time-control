@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonParser;
 
 /**
- * {@link RecurrenceRuleType} of a {@linkplain RecurrenceRule} with JSON
+ * {@link RecurrenceRuleType} of a {@linkplain TriggerPattern} with JSON
  * {@linkplain #value()} tokens. Note that {@link JsonParser} accepts
  * {@linkplain #ordinal()} as well.
  * 

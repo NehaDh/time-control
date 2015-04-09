@@ -20,9 +20,14 @@
  */
 package com.almende.timecontrol.api.eve;
 
+import io.coala.id.Identifier;
 import rx.Observable;
 
 import com.almende.eve.agent.AgentInterface;
+import com.almende.eve.protocol.jsonrpc.annotation.Access;
+import com.almende.eve.protocol.jsonrpc.annotation.AccessType;
+import com.almende.timecontrol.entity.ClockConfig.ID;
+import com.eaio.uuid.UUID;
 
 /**
  * {@link EveAgentAPI} exposes the agent's internal events (until external event
@@ -34,12 +39,91 @@ import com.almende.eve.agent.AgentInterface;
  */
 public interface EveAgentAPI extends AgentInterface
 {
+
+	/** the agent's (internal) events, only directly accessible */
+	@Access(AccessType.UNAVAILABLE)
+	Observable<AgentEvent> events();
+
 	/**
-	 * the agent's (internal) events
+	 * @date $Date$
+	 * @version $Id$
+	 * @author <a href="mailto:rick@almende.org">Rick</a>
 	 */
-	Observable<String> events();
-	
-	String AGENT_INITIALIZED = "AGENT_INITIALIZED";
-	
-	String AGENT_DESTROYED = "AGENT_DESTROYED";
+	enum AgentEvent
+	{
+		/** */
+		AGENT_INITIALIZED,
+
+		/** */
+		AGENT_DESTROYED,
+
+		;
+	}
+
+	/**
+	 * @date $Date$
+	 * @version $Id$
+	 * @author <a href="mailto:rick@almende.org">Rick</a>
+	 */
+	class SubscriptionID extends Identifier<UUID>
+	{
+		public SubscriptionID()
+		{
+			super();
+			setValue(new UUID());
+		}
+
+		/** @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD */
+		public static ID valueOf(final String value)
+		{
+			return Identifier.valueOf(value, ID.class);
+		}
+	}
+
+	/**
+	 * @date $Date$
+	 * @version $Id$
+	 * @author <a href="mailto:rick@almende.org">Rick</a>
+	 */
+	class EventWrapper<T> implements Comparable<EventWrapper<T>>
+	{
+		private final SubscriptionID subID;
+		private final T event;
+
+		private EventWrapper(final SubscriptionID subID, final T event)
+		{
+			this.subID = subID;
+			this.event = event;
+		}
+
+		public static <T> EventWrapper<T> of(final SubscriptionID subID,
+				final T event)
+		{
+			return new EventWrapper<T>(subID, event);
+		}
+
+		/**
+		 * @return {@code true} iff the {@link SubscriptionID} matches,
+		 *         {@code false} otherwise
+		 */
+		public boolean fits(final SubscriptionID subID)
+		{
+			return this.subID.equals(subID);
+		}
+
+		/**
+		 * @return the observed event
+		 */
+		public T unwrap()
+		{
+			return this.event;
+		}
+
+		@Override
+		public int compareTo(final EventWrapper<T> o)
+		{
+			return this.subID.compareTo(o.subID);
+		}
+	}
+
 }

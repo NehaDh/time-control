@@ -39,7 +39,7 @@ public interface EveTimeManagerAPI extends TimeManagerAPI, EveTimeObserverAPI
 
 	@Override
 	@Access(AccessType.PUBLIC)
-	void initialize(@Name("config") TimerConfig config);
+	void setTimerConfig(@Name("config") TimerConfig config);
 
 	@Override
 	@Access(AccessType.PUBLIC)

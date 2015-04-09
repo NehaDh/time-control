@@ -53,7 +53,7 @@ public class SimpleExample
 				.build();
 		LOG.info("Starting master with config: {}", timerConfig);
 		final TimeManagerAgent master = TimeManagerAgent.getInstance(masterId);
-		master.initialize(timerConfig);
+		master.setTimerConfig(timerConfig);
 
 		final String slaveID = "exampleSlave1";
 		LOG.info("Connecting slave: {}", slaveID);

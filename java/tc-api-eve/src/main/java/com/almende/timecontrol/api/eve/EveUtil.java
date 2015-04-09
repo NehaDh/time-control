@@ -43,6 +43,7 @@ import com.almende.eve.agent.AgentConfig;
 import com.almende.eve.capabilities.Config;
 import com.almende.eve.config.YamlReader;
 import com.almende.eve.transport.http.embed.JettyLauncher;
+import com.almende.timecontrol.api.eve.EveAgentAPI.AgentEvent;
 import com.almende.util.jackson.JOM;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -117,7 +118,7 @@ public class EveUtil
 		// @Override
 		// public void call()
 		// {
-		result.events().subscribe(new Observer<String>()
+		result.events().subscribe(new Observer<AgentEvent>()
 		{
 			@Override
 			public void onCompleted()
@@ -134,11 +135,11 @@ public class EveUtil
 			}
 
 			@Override
-			public void onNext(final String event)
+			public void onNext(final AgentEvent event)
 			{
 				LOG.trace("Agent {} produced event: {}", agentConfig.getId(),
 						event);
-				if (event.equals(EveAgentAPI.AGENT_INITIALIZED))
+				if (event == AgentEvent.AGENT_INITIALIZED)
 					waitUntilInit.countDown();
 			}
 		});

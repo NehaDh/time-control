@@ -4,7 +4,6 @@ import static org.aeonbits.owner.util.Collections.entry;
 import io.coala.util.JsonUtil;
 
 import java.net.URI;
-import java.util.Collections;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -14,28 +13,27 @@ import org.apache.logging.log4j.Logger;
 
 import rx.Observable;
 import rx.Observer;
-import rx.Subscription;
 import rx.subjects.ReplaySubject;
 import rx.subjects.Subject;
 
 import com.almende.eve.agent.Agent;
 import com.almende.eve.agent.AgentProxyFactory;
-import com.almende.timecontrol.TimerImpl;
+import com.almende.timecontrol.TimeManagerImpl;
 import com.almende.timecontrol.api.TimeManagerAPI;
-import com.almende.timecontrol.api.eve.EveTimeObserverClientAPI;
 import com.almende.timecontrol.api.eve.EveTimeManagerAPI;
+import com.almende.timecontrol.api.eve.EveTimeObserverClientAPI;
 import com.almende.timecontrol.api.eve.EveUtil;
 import com.almende.timecontrol.entity.ClockConfig;
-import com.almende.timecontrol.entity.TriggerEvent;
+import com.almende.timecontrol.entity.ClockEvent;
 import com.almende.timecontrol.entity.TimerConfig;
 import com.almende.timecontrol.entity.TimerStatus;
-import com.almende.timecontrol.entity.TriggerConfig;
-import com.almende.timecontrol.entity.TriggerConfig.ID;
+import com.almende.timecontrol.entity.TriggerEvent;
+import com.almende.timecontrol.time.TriggerPattern;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * {@link TimerAgentTest} wraps/proxies for a {@link TimerImpl} instance with
- * the JSON-RPC capability provided by this Eve {@link Agent}
+ * {@link TimerAgentTest} wraps/proxies for a {@link TimeManagerImpl} instance
+ * with the JSON-RPC capability provided by this Eve {@link Agent}
  * 
  * @date $Date$
  * @version $Id$
@@ -52,19 +50,38 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	public static final String MASTER_CONFIG_KEY = "time-manager-config";
 
 	/** */
-	private final Subject<String, String> events = ReplaySubject.create();
+	private final Subject<AgentEvent, AgentEvent> events = ReplaySubject
+			.create();
 
 	@Override
-	public Observable<String> events()
+	public Observable<AgentEvent> events()
 	{
 		return this.events.asObservable();
+	}
+
+	private final SortedMap<URI, EveTimeObserverClientAPI> observerProxyCache = new TreeMap<>();
+
+	protected EveTimeObserverClientAPI getObserverProxy(final URI slaveURI)
+	{
+		synchronized (this.observerProxyCache)
+		{
+			EveTimeObserverClientAPI result = this.observerProxyCache
+					.get(slaveURI);
+			if (result == null)
+			{
+				result = AgentProxyFactory.genProxy(this, slaveURI,
+						EveTimeObserverClientAPI.class);
+				this.observerProxyCache.put(slaveURI, result);
+			}
+			return result;
+		}
 	}
 
 	@Override
 	protected void loadConfig()
 	{
 		super.loadConfig();
-		this.events.onNext(AGENT_INITIALIZED);
+		this.events.onNext(AgentEvent.AGENT_INITIALIZED);
 	}
 
 	/**
@@ -75,7 +92,7 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	 */
 	protected TimeManagerAPI getTimer()
 	{
-		return TimerImpl.getInstance(getId());
+		return TimeManagerImpl.getInstance(getId());
 	}
 
 	@Override
@@ -85,9 +102,9 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	}
 
 	@Override
-	public void initialize(final TimerConfig config)
+	public void setTimerConfig(final TimerConfig config)
 	{
-		getTimer().initialize(config);
+		getTimer().setTimerConfig(config);
 	}
 
 	@Override
@@ -101,21 +118,9 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	{
 		super.destroy();
 		getTimer().destroy();
-		this.events.onNext(AGENT_DESTROYED);
+		this.events.onNext(AgentEvent.AGENT_DESTROYED);
 		this.events.onCompleted();
 	}
-
-	// @Override
-	// public void updateSlave(final SlaveConfig slave)
-	// {
-	// getTimer().updateSlave(slave);
-	// }
-
-	// @Override
-	// public void removeSlave(final SlaveConfig.ID slaveId)
-	// {
-	// getTimer().removeSlave(slaveId);
-	// }
 
 	@Override
 	public void updateClock(final ClockConfig clock)
@@ -124,9 +129,52 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	}
 
 	@Override
-	public Observable<ClockConfig> observeClock(final ClockConfig.ID id)
+	public Observable<ClockEvent> observeClock()
 	{
-		throw new IllegalStateException("NOT SUPPORTED VIA JSON-RPC");
+		return getTimer().observeClock();
+	}
+
+	@Override
+	public Observable<ClockEvent> observeClock(final ClockConfig.ID id)
+	{
+		return getTimer().observeClock(id);
+	}
+
+	@Override
+	public SubscriptionID observeClockCallback(final String callbackURI)
+	{
+		return observeClockCallback(null, callbackURI);
+	}
+
+	@Override
+	public SubscriptionID observeClockCallback(final ClockConfig.ID id,
+			final String callbackURI)
+	{
+		final SubscriptionID callbackID = new SubscriptionID();
+		getTimer().observeClock(id).subscribe(new Observer<ClockEvent>()
+		{
+			private final URI uri = URI.create(callbackURI);
+
+			@Override
+			public void onCompleted()
+			{
+				LOG.trace("Completed clock: {}", id);
+			}
+
+			@Override
+			public void onError(final Throwable e)
+			{
+				LOG.error("Problem observing trigger " + id
+						+ " for callbackURI " + this.uri, e);
+			}
+
+			@Override
+			public void onNext(final ClockEvent clock)
+			{
+				getObserverProxy(this.uri).notifyClock(callbackID, clock);
+			}
+		});
+		return callbackID;
 	}
 
 	@Override
@@ -136,78 +184,59 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	}
 
 	@Override
-	public void updateTrigger(final TriggerConfig trigger)
+	public SubscriptionID registerTriggerCallback(final TriggerPattern pattern,
+			final String callbackURI)
 	{
-		throw new IllegalStateException("NOT SUPPORTED VIA JSON-RPC");
+		return registerTriggerCallback(null, pattern, callbackURI);
 	}
-
-	private final SortedMap<URI, EveTimeObserverClientAPI> slaveProxyCache = new TreeMap<>();
-
-	protected EveTimeObserverClientAPI getSlaveProxy(final URI slaveURI)
-	{
-		synchronized (this.slaveProxyCache)
-		{
-			EveTimeObserverClientAPI result = this.slaveProxyCache.get(slaveURI);
-			if (result == null)
-			{
-				result = AgentProxyFactory.genProxy(this, slaveURI,
-						EveTimeObserverClientAPI.class);
-				this.slaveProxyCache.put(slaveURI, result);
-			}
-			return result;
-		}
-	}
-
-	private SortedMap<TriggerConfig.ID, Subscription> jobSubscriptions = Collections
-			.synchronizedSortedMap(new TreeMap<TriggerConfig.ID, Subscription>());
 
 	@Override
-	public void updateTrigger(final URI callbackURI, final TriggerConfig trigger)
+	public Observable<TriggerEvent> registerTrigger(final TriggerPattern pattern)
 	{
-		final TriggerConfig.ID id = trigger.id();
-		if (id == null)
-			throw new NullPointerException("Trigger ill defined: " + trigger);
-		if (!this.jobSubscriptions.containsKey(id))
-		{
-			LOG.trace(callbackURI + " added new trigger: " + trigger);
-			this.jobSubscriptions.put(id, getTimer().observeTrigger(id)
-					.subscribe(new Observer<TriggerEvent>()
+		return getTimer().registerTrigger(pattern);
+	}
+
+	@Override
+	public Observable<TriggerEvent> registerTrigger(
+			final ClockConfig.ID clockId, final TriggerPattern pattern)
+	{
+		return getTimer().registerTrigger(clockId, pattern);
+	}
+
+	@Override
+	public SubscriptionID registerTriggerCallback(final ClockConfig.ID clockId,
+			final TriggerPattern pattern, final String callbackURI)
+	{
+		final SubscriptionID callbackID = new SubscriptionID();
+		getTimer().registerTrigger(clockId, pattern).subscribe(
+				new Observer<TriggerEvent>()
+				{
+					private final URI uri = URI.create(callbackURI);
+
+					@Override
+					public void onCompleted()
 					{
-						@Override
-						public void onCompleted()
-						{
-							LOG.trace("Unregistering completed trigger: " + id);
-							jobSubscriptions.remove(id);
-						}
+						LOG.trace("Completed trigger pattern: " + pattern);
+					}
 
-						@Override
-						public void onError(final Throwable e)
-						{
-							LOG.error("Problem observing trigger: " + id
-									+ " for uri: " + callbackURI, e);
-						}
+					@Override
+					public void onError(final Throwable e)
+					{
+						LOG.error("Problem observing trigger pattern: "
+								+ pattern + " for callbackURI: " + this.uri, e);
+					}
 
-						@Override
-						public void onNext(final TriggerEvent job)
-						{
-							getSlaveProxy(callbackURI).notifyTrigger(job);
-						}
-					}));
-		}
-		getTimer().updateTrigger(trigger);
+					@Override
+					public void onNext(final TriggerEvent job)
+					{
+						getObserverProxy(this.uri).notifyTrigger(callbackID,
+								job);
+					}
+				});
+		return callbackID;
 	}
 
-	@Override
-	public Observable<TriggerEvent> observeTrigger(ID triggerId)
-	{
-		throw new IllegalStateException("NOT SUPPORTED VIA JSON-RPC");
-	}
-
-	@Override
-	public void removeTrigger(final TriggerConfig.ID triggerId)
-	{
-		getTimer().removeTrigger(triggerId);
-	}
+	/**************************************************************************/
 
 	/** */
 	public static TimeManagerAgent valueOf(final TimerConfig config)

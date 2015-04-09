@@ -24,6 +24,7 @@ import static org.aeonbits.owner.util.Collections.entry;
 import io.coala.util.JsonUtil;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -43,10 +44,11 @@ import com.almende.timecontrol.api.eve.EveTimeManagerAPI;
 import com.almende.timecontrol.api.eve.EveTimeObserverClientAPI;
 import com.almende.timecontrol.api.eve.EveUtil;
 import com.almende.timecontrol.entity.ClockConfig;
+import com.almende.timecontrol.entity.ClockEvent;
 import com.almende.timecontrol.entity.TimerConfig;
 import com.almende.timecontrol.entity.TimerStatus;
-import com.almende.timecontrol.entity.TriggerConfig;
 import com.almende.timecontrol.entity.TriggerEvent;
+import com.almende.timecontrol.time.TriggerPattern;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
@@ -76,11 +78,11 @@ public class TimeManagerClientAgent extends Agent implements
 	// private SlaveStatus status;
 
 	/** */
-	private Subject<ClockConfig, ClockConfig> timeUpdates = PublishSubject
+	private Subject<EventWrapper<ClockEvent>, EventWrapper<ClockEvent>> clockEvents = PublishSubject
 			.create();
 
 	/** */
-	private Subject<TriggerEvent, TriggerEvent> jobUpdates = PublishSubject
+	private Subject<EventWrapper<TriggerEvent>, EventWrapper<TriggerEvent>> triggerEvents = PublishSubject
 			.create();
 
 	/** */
@@ -89,10 +91,11 @@ public class TimeManagerClientAgent extends Agent implements
 	private boolean initialized = false;
 
 	/** */
-	private final Subject<String, String> events = ReplaySubject.create();
+	private final Subject<AgentEvent, AgentEvent> events = ReplaySubject
+			.create();
 
 	@Override
-	public Observable<String> events()
+	public Observable<AgentEvent> events()
 	{
 		return this.events.asObservable();
 	}
@@ -122,12 +125,13 @@ public class TimeManagerClientAgent extends Agent implements
 		this.timerProxy = AgentProxyFactory.genProxy(this, timerAgentURI,
 				EveTimeManagerAPI.class);
 
-		LOG.warn("Connected to time control master at uri: " + timerAgentURI);
+		final TimerConfig config = this.timerProxy.getTimerConfig();
+		LOG.warn(
+				"Connected to time control master at uri: {}, got timer config: {}",
+				timerAgentURI, config);
 
-		// send local configuration to (re)connect
-		// getTimerProxy().updateSlave(this.status.slave());
 		this.initialized = true;
-		this.events.onNext(AGENT_INITIALIZED);
+		this.events.onNext(AgentEvent.AGENT_INITIALIZED);
 	}
 
 	/**
@@ -137,12 +141,6 @@ public class TimeManagerClientAgent extends Agent implements
 	{
 		return this.timerProxy;
 	}
-
-	// @Override
-	// public SlaveStatus getSlaveStatus()
-	// {
-	// return this.status;
-	// }
 
 	@Override
 	public TimerConfig getTimerConfig()
@@ -159,32 +157,22 @@ public class TimeManagerClientAgent extends Agent implements
 	@Override
 	public void destroy()
 	{
-		getTimerProxy().destroy();
+		super.destroy();
+		this.events.onNext(AgentEvent.AGENT_DESTROYED);
+		this.events.onCompleted();
 	}
 
 	@Override
-	public void initialize(final TimerConfig config)
+	public void setTimerConfig(final TimerConfig config)
 	{
 		try
 		{
-			getTimerProxy().initialize(config);
+			getTimerProxy().setTimerConfig(config);
 		} catch (final Throwable t)
 		{
 			LOG.error("Problem in JSON-RPC", t);
 		}
 	}
-
-	// @Override
-	// public void updateSlave(final SlaveConfig slave)
-	// {
-	// getTimerProxy().updateSlave(slave);
-	// }
-
-	// @Override
-	// public void removeSlave(final SlaveConfig.ID slaveId)
-	// {
-	// getTimerProxy().removeSlave(slaveId);
-	// }
 
 	@Override
 	public void updateClock(final ClockConfig clock)
@@ -193,25 +181,48 @@ public class TimeManagerClientAgent extends Agent implements
 	}
 
 	@Override
-	public void notifyClock(final ClockConfig clock)
+	public void notifyClock(final SubscriptionID callbackID,
+			final ClockEvent clock)
 	{
-		this.timeUpdates.onNext(clock);
+		this.clockEvents.onNext(EventWrapper.of(callbackID, clock));
 	}
 
 	@Override
-	public Observable<ClockConfig> observeClock(final ClockConfig.ID id)
+	public Observable<ClockEvent> observeClock()
 	{
-		return this.timeUpdates.filter(new Func1<ClockConfig, Boolean>()
+		return observeClock(null);
+	}
+
+	private final Map<ClockConfig.ID, Observable<ClockEvent>> clockObservables = new HashMap<>();
+
+	@Override
+	public Observable<ClockEvent> observeClock(final ClockConfig.ID id)
+	{
+		Observable<ClockEvent> cachedResult = this.clockObservables.get(id);
+		if (cachedResult == null)
 		{
-			@Override
-			public Boolean call(final ClockConfig update)
+			final SubscriptionID subID = getTimerProxy().observeClockCallback(
+					id, null);
+			cachedResult = this.clockEvents.filter(
+					new Func1<EventWrapper<ClockEvent>, Boolean>()
+					{
+						@Override
+						public Boolean call(
+								final EventWrapper<ClockEvent> wrapper)
+						{
+							return wrapper.fits(subID);
+						}
+					}).map(new Func1<EventWrapper<ClockEvent>, ClockEvent>()
 			{
-				if (update.id() == null)
-					throw new NullPointerException("Incomplete clock config: "
-							+ update);
-				return update.id().equals(id);
-			}
-		});
+				@Override
+				public ClockEvent call(final EventWrapper<ClockEvent> wrapper)
+				{
+					return wrapper.unwrap();
+				}
+			});
+			this.clockObservables.put(id, cachedResult);
+		}
+		return cachedResult;
 	}
 
 	@Override
@@ -221,37 +232,45 @@ public class TimeManagerClientAgent extends Agent implements
 	}
 
 	@Override
-	public void updateTrigger(final TriggerConfig trigger)
+	public void notifyTrigger(final SubscriptionID subscriptionID,
+			final TriggerEvent job)
 	{
-		try
+		this.triggerEvents.onNext(EventWrapper.of(subscriptionID, job));
+	}
+
+	@Override
+	public Observable<TriggerEvent> registerTrigger(final TriggerPattern pattern)
+	{
+		return registerTrigger(null, pattern);
+	}
+
+	@Override
+	public Observable<TriggerEvent> registerTrigger(
+			final ClockConfig.ID clockId, final TriggerPattern pattern)
+	{
+		// TODO add caching/forking for similar patterns?
+
+		final SubscriptionID subID = getTimerProxy().registerTriggerCallback(
+				clockId, pattern, null);
+		return this.triggerEvents.filter(
+				new Func1<EventWrapper<TriggerEvent>, Boolean>()
+				{
+					@Override
+					public Boolean call(final EventWrapper<TriggerEvent> wrapper)
+					{
+						return wrapper.fits(subID);
+					}
+				}).map(new Func1<EventWrapper<TriggerEvent>, TriggerEvent>()
 		{
-			LOG.trace("Callback URIs: {}", getTransport().getAddresses());
-			getTimerProxy().updateTrigger(URI.create("local:" + getId()),
-					trigger);
-		} catch (final Throwable t)
-		{
-			LOG.error("Problem in JSON-RPC", t);
-		}
+			@Override
+			public TriggerEvent call(final EventWrapper<TriggerEvent> wrapper)
+			{
+				return wrapper.unwrap();
+			}
+		});
 	}
 
-	@Override
-	public void notifyTrigger(final TriggerEvent job)
-	{
-		this.jobUpdates.onNext(job);
-	}
-
-	@Override
-	public Observable<TriggerEvent> observeTrigger(
-			final TriggerConfig.ID triggerId)
-	{
-		return this.jobUpdates.asObservable();
-	}
-
-	@Override
-	public void removeTrigger(final TriggerConfig.ID triggerId)
-	{
-		getTimerProxy().removeTrigger(triggerId);
-	}
+	/**************************************************************************/
 
 	/** */
 	public static TimeManagerClientAgent valueOf(final TimerConfig.ID timerId,

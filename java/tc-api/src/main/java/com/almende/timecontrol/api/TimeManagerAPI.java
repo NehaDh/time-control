@@ -41,7 +41,7 @@ public interface TimeManagerAPI extends TimeObserverAPI
 	 * 
 	 * @param config the {@link TimerConfig} to (re)register
 	 */
-	void initialize(TimerConfig config);
+	void setTimerConfig(TimerConfig config);
 
 	/**
 	 * @return the current {@link TimerConfig}

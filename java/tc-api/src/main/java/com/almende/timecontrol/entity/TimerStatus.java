@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
-import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.almende.timecontrol.TimeControl;
@@ -42,20 +41,18 @@ import com.fasterxml.jackson.core.TreeNode;
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
 @BeanWrapper(comparableOn = TimeControl.CONFIG_KEY)
-public interface TimerStatus extends Comparable<TimerStatus> // , Accessible
+public interface TimerStatus extends Comparable<TimerStatus>
 {
 
 	/**
 	 * @return
 	 */
-	// @Key(TimeControl.CONFIG_KEY)
 	TimerConfig config();
 
 	/**
 	 * @return the {@link ClockConfig}s currently managed by the
 	 *         {@link #timer()}
 	 */
-	// @Key(TimeControl.CLOCKS_KEY)
 	List<ClockStatus> clocks();
 
 	/**
@@ -159,16 +156,13 @@ public interface TimerStatus extends Comparable<TimerStatus> // , Accessible
 			Object value = get(TimeControl.CLOCKS_KEY, Object.class);
 			if (value == null)
 			{
+				// FIXME use more efficient collection, e.g. arraylist, hashset?
 				value = new TreeSet<ClockStatus>();
 				with(TimeControl.CLOCKS_KEY, value);
 			}
 
-			if (clocks != null && clocks.size() != 0)
-			{
-				final SortedSet<ClockStatus> set = (SortedSet<ClockStatus>) value;
-				for (ClockStatus clock : clocks)
-					set.add(clock);
-			}
+			if (clocks != null)
+				((Collection<ClockStatus>) value).addAll(clocks);
 			return this;
 		}
 

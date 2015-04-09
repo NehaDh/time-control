@@ -28,7 +28,6 @@ import io.coala.util.JsonUtil;
 import java.util.Properties;
 
 import org.aeonbits.owner.Accessible;
-import org.aeonbits.owner.Mutable;
 
 import com.almende.timecontrol.TimeControl;
 import com.almende.timecontrol.time.Duration;
@@ -44,8 +43,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
 @BeanWrapper(comparableOn = TimeControl.ID_KEY)
-public interface TimerConfig extends Comparable<TimerConfig>, Mutable,
-		Accessible
+public interface TimerConfig extends Comparable<TimerConfig>, Accessible
 {
 
 	/** @return the {@link ID} of this {@link TimerConfig} */
@@ -77,6 +75,14 @@ public interface TimerConfig extends Comparable<TimerConfig>, Mutable,
 	/** the simulated duration */
 	@Key(TimeControl.DURATION_KEY)
 	Duration duration();
+
+	/**
+	 * @return the minimum wall-clock duration to wait (>0) before timing out
+	 *         and unregistering a non-responsive {@link TriggerConfig}
+	 *         subscriber, default: <= 0 (never)
+	 */
+	// @Key(TimeControl.SLAVE_TIMEOUT_KEY)
+	// Duration slaveTimeout();
 
 	/**
 	 * {@link ID}

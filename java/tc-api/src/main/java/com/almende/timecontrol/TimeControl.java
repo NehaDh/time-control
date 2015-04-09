@@ -46,6 +46,9 @@ public interface TimeControl
 	String CLOCK_KEY = "clock";
 
 	/** */
+	String CLOCK_ID_KEY = "clockId";
+
+	/** */
 	String CLOCKS_KEY = "clocks";
 
 	/** */
@@ -76,7 +79,8 @@ public interface TimeControl
 	String UPCOMING_JOBS_KEY = "upcomingJobs";
 
 	/** */
-	String SUBSCRIBERS_KEY = "subscribers";
+	//String SUBSCRIBERS_KEY = "subscribers";
+	String JOBS_KEY = "jobs";
 
 	/** */
 	String RESOLUTION_KEY = "resolution";
@@ -100,7 +104,7 @@ public interface TimeControl
 	String STATUS_KEY = "status";
 
 	/** */
-	String PACE_KEY = "pace";
+	String DRAG_KEY = "drag";
 
 	/** */
 	String TIME_KEY = "time";
