@@ -152,16 +152,20 @@ public class TimeManagerImpl implements TimeManagerAPI
 			result = this.clocks.get(getTimerConfig().rootClockId());
 		else
 		{
+			if (!this.clocks.containsKey(clockId))
+				updateClock(ClockConfig.Builder.forID(clockId.getValue())
+						.build());
+
 			result = this.clocks.get(clockId);
-			if (result == null)
-			{
-				LOG.error(
-						"No clock {} set or no root clock in timer config: {}",
-						clockId, getTimerConfig());
-				return null;
-			}
 		}
-		LOG.trace("Found clock {} config: {}", result.config);
+		if (result == null)
+		{
+			LOG.error("No clock {} set or no root clock in timer config: {}",
+					clockId, getTimerConfig());
+			return null;
+		}
+		LOG.trace("Found clock {} config: {}", clockId, result == null ? null
+				: result.config);
 		return result.config;
 	}
 

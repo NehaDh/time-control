@@ -240,7 +240,17 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 		public static Builder forID(final String id,
 				final Properties... imports)
 		{
-			return new Builder(imports).withId(ID.valueOf(id));
+			return forID(ID.valueOf(id));
+		}
+
+		/**
+		 * @param id the JSON-formatted identifier value
+		 * @param imports optional property defaults
+		 * @return the new {@link Builder}
+		 */
+		public static Builder forID(final ID id, final Properties... imports)
+		{
+			return new Builder(imports).withId(id);
 		}
 
 		/**

@@ -37,6 +37,7 @@ import io.coala.time.ClockID;
 import io.coala.time.SimTime;
 import io.coala.time.SimTimeFactory;
 import io.coala.time.TimeUnit;
+import io.coala.util.LogUtil;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,7 +49,7 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.inject.Inject;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
 
 import rx.Observable;
 import rx.Observer;
@@ -82,7 +83,7 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 	private static final long serialVersionUID = 1L;
 
 	/** */
-	private static final Logger LOG = Logger
+	private static final Logger LOG = LogUtil
 			.getLogger(TimeControlCapabilityImpl.class);
 
 	/** */
@@ -164,7 +165,8 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 					}
 
 					@Override
-					public void onNext(final EveTimeAgentAPI.AgentEventType event)
+					public void onNext(
+							final EveTimeAgentAPI.AgentEventType event)
 					{
 						LOG.info("Proxy status: " + event);
 					}

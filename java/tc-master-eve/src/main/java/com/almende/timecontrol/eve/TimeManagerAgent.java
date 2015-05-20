@@ -269,7 +269,9 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	/** */
 	public static TimeManagerAgent getInstance(final String timerID)
 	{
-		return getInstance(new AgentConfig(timerID));
+		final AgentConfig cfg = new AgentConfig(timerID);
+		cfg.setClassName(TimeManagerAgent.class.getName());
+		return getInstance(cfg);
 	}
 
 	/** */

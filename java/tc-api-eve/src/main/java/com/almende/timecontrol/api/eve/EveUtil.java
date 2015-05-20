@@ -92,7 +92,7 @@ public class EveUtil
 	@SuppressWarnings("unchecked")
 	@SafeVarargs
 	public static final <T extends EveTimeAgentAPI> T valueOf(
-			final AgentConfig agentConfig, //final Class<T> agentType,
+			final AgentConfig agentConfig, // final Class<T> agentType,
 			final Map.Entry<String, ? extends JsonNode>... parameters)
 	{
 		synchronized (EveUtil.class)
@@ -187,14 +187,16 @@ public class EveUtil
 
 				LOG.info("Creating agent {} from config at {}", id,
 						cfg.agentConfigUri());
-				return valueOf(new AgentConfig((ObjectNode) agent), //agentType,
-						parameters);
+				final AgentConfig c = new AgentConfig(id, (ObjectNode) agent);
+				c.setClassName(agentType.getName());
+				return valueOf(c, parameters);
 			}
 		}
+		final AgentConfig c = cfg.agentConfig();
+		c.setClassName(agentType.getName());
 		LOG.info("No config found at {} for agent: {}. "
 				+ "Using default config", cfg.agentConfigUri(), id);
-		return valueOf(cfg.agentConfig(), //agentType, 
-				parameters);
+		return valueOf(c, parameters);
 	}
 
 	public static void stop() throws Exception
