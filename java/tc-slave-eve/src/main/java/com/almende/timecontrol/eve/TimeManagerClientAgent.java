@@ -32,6 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import rx.Observable;
+import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
@@ -74,30 +75,94 @@ public class TimeManagerClientAgent extends Agent implements
 	private static final Logger LOG = LogManager
 			.getLogger(TimeManagerClientAgent.class);
 
-	/** the latest {@link SlaveStatus} received from the {@link #timerProxy} */
-	// private SlaveStatus status;
-
 	/** */
-	private Subject<EventWrapper<ClockEvent>, EventWrapper<ClockEvent>> clockEvents = PublishSubject
+	private final Subject<EventWrapper<ClockEvent>, EventWrapper<ClockEvent>> clockEvents = PublishSubject
 			.create();
 
 	/** */
-	private Subject<EventWrapper<TriggerEvent>, EventWrapper<TriggerEvent>> triggerEvents = PublishSubject
+	private final Subject<EventWrapper<TriggerEvent>, EventWrapper<TriggerEvent>> triggerEvents = PublishSubject
 			.create();
 
 	/** */
-	private EveTimeManagerAPI timerProxy;
-
-	private boolean initialized = false;
+	private final Map<ClockConfig.ID, Observable<ClockEvent>> clockObservableCache = new HashMap<>();
 
 	/** */
-	private final Subject<AgentEvent, AgentEvent> events = ReplaySubject
+	private final Map<ClockConfig.ID, Map<TriggerPattern, Observable<TriggerEvent>>> triggerObservableCache = new HashMap<>();
+
+	/** */
+	private final Subject<AgentEventType, AgentEventType> events = ReplaySubject
 			.create();
+
+	/** */
+	private volatile EveTimeManagerAPI timerProxy;
+
+	/** */
+	private volatile boolean initialized = false;
+
+	/** */
+	private volatile TimerConfig timerConfig = null;
+
+	/** */
+	private volatile ClockConfig rootClock = null;
 
 	@Override
-	public Observable<AgentEvent> events()
+	public Observable<AgentEventType> events()
 	{
 		return this.events.asObservable();
+	}
+
+	/**
+	 * clean up {@link #clockObservableCache}
+	 * 
+	 * @param clockId
+	 */
+	protected void cleanClockObservableCache(final ClockConfig.ID clockId)
+	{
+		synchronized (this.clockObservableCache)
+		{
+			final Observable<ClockEvent> empty = Observable.empty();
+			this.clockObservableCache.put(clockId, empty);
+		}
+	}
+
+	/**
+	 * clean up {@link #triggerObservableCache}
+	 * 
+	 * @param clockId
+	 */
+	protected void cleanTriggerObservableCache(final ClockConfig.ID clockId)
+	{
+		synchronized (this.triggerObservableCache)
+		{
+			final Map<TriggerPattern, Observable<TriggerEvent>> observables = this.triggerObservableCache
+					.get(clockId);
+			if (observables == null)
+				return;
+
+			for (TriggerPattern pattern : observables.keySet())
+				cleanTriggerObservableCache(clockId, pattern);
+		}
+	}
+
+	/**
+	 * clean up {@link #triggerObservableCache}
+	 * 
+	 * @param clockId
+	 * @param pattern
+	 */
+	protected void cleanTriggerObservableCache(final ClockConfig.ID clockId,
+			final TriggerPattern pattern)
+	{
+		synchronized (this.triggerObservableCache)
+		{
+			final Map<TriggerPattern, Observable<TriggerEvent>> observables = this.triggerObservableCache
+					.get(clockId);
+			if (observables == null)
+				return;
+
+			final Observable<TriggerEvent> empty = Observable.empty();
+			observables.put(pattern, empty);
+		}
 	}
 
 	@Override
@@ -125,13 +190,15 @@ public class TimeManagerClientAgent extends Agent implements
 		this.timerProxy = AgentProxyFactory.genProxy(this, timerAgentURI,
 				EveTimeManagerAPI.class);
 
-		final TimerConfig config = this.timerProxy.getTimerConfig();
+		this.timerConfig = this.timerProxy.getTimerConfig();
+		this.rootClock = this.timerProxy.getClock(this.timerConfig
+				.rootClockId());
 		LOG.warn(
 				"Connected to time control master at uri: {}, got timer config: {}",
-				timerAgentURI, config);
+				timerAgentURI, this.timerConfig);
 
 		this.initialized = true;
-		this.events.onNext(AgentEvent.AGENT_INITIALIZED);
+		this.events.onNext(AgentEventType.AGENT_INITIALIZED);
 	}
 
 	/**
@@ -145,21 +212,7 @@ public class TimeManagerClientAgent extends Agent implements
 	@Override
 	public TimerConfig getTimerConfig()
 	{
-		return getTimerProxy().getTimerConfig();
-	}
-
-	@Override
-	public TimerStatus getTimerStatus()
-	{
-		return getTimerProxy().getTimerStatus();
-	}
-
-	@Override
-	public void destroy()
-	{
-		super.destroy();
-		this.events.onNext(AgentEvent.AGENT_DESTROYED);
-		this.events.onCompleted();
+		return this.timerConfig;
 	}
 
 	@Override
@@ -172,6 +225,26 @@ public class TimeManagerClientAgent extends Agent implements
 		{
 			LOG.error("Problem in JSON-RPC", t);
 		}
+	}
+
+	@Override
+	public TimerStatus getTimerStatus()
+	{
+		return getTimerProxy().getTimerStatus();
+	}
+
+	@Override
+	public void destroy()
+	{
+		super.destroy();
+		this.events.onNext(AgentEventType.AGENT_DESTROYED);
+		this.events.onCompleted();
+	}
+
+	@Override
+	public ClockConfig getClock(final ClockConfig.ID clockId)
+	{
+		return getTimerProxy().getClock(clockId);
 	}
 
 	@Override
@@ -193,36 +266,54 @@ public class TimeManagerClientAgent extends Agent implements
 		return observeClock(null);
 	}
 
-	private final Map<ClockConfig.ID, Observable<ClockEvent>> clockObservables = new HashMap<>();
-
 	@Override
 	public Observable<ClockEvent> observeClock(final ClockConfig.ID id)
 	{
-		Observable<ClockEvent> cachedResult = this.clockObservables.get(id);
-		if (cachedResult == null)
+		final ClockConfig.ID clockId = id != null ? id
+				: this.rootClock != null ? this.rootClock.id() : null;
+
+		synchronized (this.clockObservableCache)
 		{
-			final SubscriptionID subID = getTimerProxy().observeClockCallback(
-					id, null);
-			cachedResult = this.clockEvents.filter(
-					new Func1<EventWrapper<ClockEvent>, Boolean>()
-					{
-						@Override
-						public Boolean call(
-								final EventWrapper<ClockEvent> wrapper)
-						{
-							return wrapper.fits(subID);
-						}
-					}).map(new Func1<EventWrapper<ClockEvent>, ClockEvent>()
+			Observable<ClockEvent> cachedResult = this.clockObservableCache
+					.get(clockId);
+
+			if (cachedResult == null)
 			{
-				@Override
-				public ClockEvent call(final EventWrapper<ClockEvent> wrapper)
+				final SubscriptionID subID = getTimerProxy()
+						.observeClockCallback(clockId, null);
+				cachedResult = this.clockEvents.filter(
+						new Func1<EventWrapper<ClockEvent>, Boolean>()
+						{
+							@Override
+							public Boolean call(
+									final EventWrapper<ClockEvent> wrapper)
+							{
+								return wrapper.fits(subID);
+							}
+						}).map(
+						new Func1<EventWrapper<ClockEvent>, ClockEvent>()
+						{
+							@Override
+							public ClockEvent call(
+									final EventWrapper<ClockEvent> wrapper)
+							{
+								return wrapper.unwrap();
+							}
+						});
+
+				cachedResult.finallyDo(new Action0()
 				{
-					return wrapper.unwrap();
-				}
-			});
-			this.clockObservables.put(id, cachedResult);
+					@Override
+					public void call()
+					{
+						cleanClockObservableCache(clockId);
+						cleanTriggerObservableCache(clockId);
+					}
+				});
+				this.clockObservableCache.put(clockId, cachedResult);
+			}
+			return cachedResult;
 		}
-		return cachedResult;
 	}
 
 	@Override
@@ -245,29 +336,65 @@ public class TimeManagerClientAgent extends Agent implements
 	}
 
 	@Override
-	public Observable<TriggerEvent> registerTrigger(
-			final ClockConfig.ID clockId, final TriggerPattern pattern)
+	public Observable<TriggerEvent> registerTrigger(final ClockConfig.ID id,
+			final TriggerPattern pattern)
 	{
-		// TODO add caching/forking for similar patterns?
+		final ClockConfig.ID clockId = id != null ? id
+				: this.rootClock != null ? this.rootClock.id() : null;
 
-		final SubscriptionID subID = getTimerProxy().registerTriggerCallback(
-				clockId, pattern, null);
-		return this.triggerEvents.filter(
-				new Func1<EventWrapper<TriggerEvent>, Boolean>()
+		synchronized (this.triggerObservableCache)
+		{
+			Map<TriggerPattern, Observable<TriggerEvent>> observables = this.triggerObservableCache
+					.get(clockId);
+			if (observables == null)
+			{
+				observables = new HashMap<>();
+				this.triggerObservableCache.put(clockId, observables);
+			}
+			Observable<TriggerEvent> cachedResult = this.triggerObservableCache
+					.get(clockId).get(pattern);
+			if (cachedResult == null)
+			{
+				final SubscriptionID subID = getTimerProxy()
+						.registerTriggerCallback(clockId, pattern, null);
+				cachedResult = this.triggerEvents
+						.filter(new Func1<EventWrapper<TriggerEvent>, Boolean>()
+						{
+							@Override
+							public Boolean call(
+									final EventWrapper<TriggerEvent> wrapper)
+							{
+								return wrapper.fits(subID);
+							}
+						})
+						.map(new Func1<EventWrapper<TriggerEvent>, TriggerEvent>()
+						{
+							@Override
+							public TriggerEvent call(
+									final EventWrapper<TriggerEvent> wrapper)
+							{
+								return wrapper.unwrap();
+							}
+						}).takeWhile(new Func1<TriggerEvent, Boolean>()
+						{
+							@Override
+							public Boolean call(final TriggerEvent event)
+							{
+								return !event.isPatternCompleted();
+							}
+						}).takeUntil(observeClock(clockId).takeLast(1));
+				cachedResult.finallyDo(new Action0()
 				{
 					@Override
-					public Boolean call(final EventWrapper<TriggerEvent> wrapper)
+					public void call()
 					{
-						return wrapper.fits(subID);
+						cleanTriggerObservableCache(clockId, pattern);
 					}
-				}).map(new Func1<EventWrapper<TriggerEvent>, TriggerEvent>()
-		{
-			@Override
-			public TriggerEvent call(final EventWrapper<TriggerEvent> wrapper)
-			{
-				return wrapper.unwrap();
+				});
+				observables.put(pattern, cachedResult);
 			}
-		});
+			return cachedResult;
+		}
 	}
 
 	/**************************************************************************/

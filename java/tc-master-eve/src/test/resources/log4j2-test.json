@@ -1,12 +1,17 @@
 {
 	"configuration":{
 		"loggers":{
-			"root":{
-				"level":"trace",
-				"AppenderRef":{
-					"ref":"STDOUT"
-				}
-			}
+			"root":{ 
+				"level": "trace", 
+				"AppenderRef":{ "ref": "STDOUT" }
+			},
+			 "logger": [
+            	{
+                "name": "org.eclipse.jetty",
+                "level": "info",
+				"AppenderRef":{ "ref": "STDOUT" }
+            	 }
+    	    ]
 		},
 		"appenders":{
 			"Console":{

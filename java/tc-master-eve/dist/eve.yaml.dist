@@ -1,0 +1,50 @@
+# $Id$
+# $URL$
+
+templates:
+   defaultAgent:
+     transport:
+     -  class: com.almende.eve.transport.ws.WebsocketTransportBuilder
+#        address: ws://openid.almende.org:8099/ws/controlProxy
+        address: ws://localhost:8099/ws/controlProxy
+        servletLauncher: JettyLauncher
+        server: true
+        doShortcut: true
+        doAuthentication: false
+        jetty: 
+           port: 8099
+           cors:
+             class: com.thetransactioncompany.cors.CORSFilter
+             path: /*
+     -  class: com.almende.eve.transport.http.HttpTransportBuilder
+#        servletUrl: http://openid.almende.org:8099/agents/
+        servletUrl: http://localhost:8099/agents/
+        servletLauncher: JettyLauncher
+        servletClass: com.almende.eve.transport.http.DebugServlet
+        doShortcut: true
+        doAuthentication: false
+        jetty: 
+           port: 8099
+           cors:
+             class: com.thetransactioncompany.cors.CORSFilter
+             path: /*
+     state:
+       class: com.almende.eve.state.file.FileStateBuilder
+       path: .time_agents
+     scheduler:
+       class: com.almende.eve.scheduling.SimpleSchedulerBuilder
+     protocols:
+     - class: com.almende.eve.protocol.jsonrpc.JSONRpcProtocolBuilder
+       rpcTimeout: 20
+
+agents:
+-  id: workaround
+   extends: templates/defaultAgent
+   class: com.almende.timecontrol.eve.DummyAgent
+-  id: time
+   extends: templates/defaultAgent
+   class: com.almende.timecontrol.eve.ManagerAgent
+   timerConfig:
+      extends: templates/defaultAgent
+      class: com.almende.timecontrol.eve.TimeManagerAgent
+      parentUrl: time

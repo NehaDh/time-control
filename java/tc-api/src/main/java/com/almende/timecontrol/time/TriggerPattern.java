@@ -20,12 +20,10 @@
  */
 package com.almende.timecontrol.time;
 
-import io.coala.error.ExceptionBuilder;
 import io.coala.util.JsonUtil;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
@@ -52,7 +50,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.ical.compat.jodatime.DateTimeIteratorFactory;
 
 /**
- * {@link TriggerPattern} TODO test!!
+ * {@link TriggerPattern} wraps a pattern value and its resulting observable
+ * instants
  * 
  * @date $Date$
  * @version $Id$
@@ -62,6 +61,11 @@ import com.google.ical.compat.jodatime.DateTimeIteratorFactory;
 @JsonDeserialize(using = TriggerPattern.JsonDeserializer.class)
 public class TriggerPattern
 {
+
+	/** */
+	private static final Logger LOG = LogManager
+			.getLogger(TriggerPattern.class);
+
 	/** */
 	private static final Pattern dtStartTimePattern = Pattern
 			.compile("DTSTART[.]*:(.*)");
@@ -72,10 +76,6 @@ public class TriggerPattern
 
 	/** */
 	private Object value;
-
-	/** */
-	@JsonIgnore
-	private final Observable<Instant> values;
 
 	/**
 	 * @param measure
@@ -152,7 +152,7 @@ public class TriggerPattern
 	 */
 	public TriggerPattern(final String json)
 	{
-		this(json, parseInstantOrIntervalOrRule(json));
+		this((Object) json);
 	}
 
 	/**
@@ -163,9 +163,7 @@ public class TriggerPattern
 	 */
 	public TriggerPattern(final double absoluteInstantMS)
 	{
-		// TODO convert to default time unit (other than MILLIS)?
-		this(absoluteInstantMS, Observable.just(Instant
-				.valueOf((long) absoluteInstantMS)));
+		this(Instant.valueOf(absoluteInstantMS));
 	}
 
 	/**
@@ -176,8 +174,7 @@ public class TriggerPattern
 	 */
 	public TriggerPattern(final int absoluteInstantMS)
 	{
-		this(absoluteInstantMS, Observable.just(Instant
-				.valueOf(absoluteInstantMS)));
+		this(Instant.valueOf(absoluteInstantMS));
 	}
 
 	/**
@@ -186,10 +183,9 @@ public class TriggerPattern
 	 * @param values
 	 * @param type
 	 */
-	public TriggerPattern(final Object value, final Observable<Instant> values)
+	public TriggerPattern(final Object value)
 	{
 		this.value = value;
-		this.values = values;
 	}
 
 	public Object getValue()
@@ -202,23 +198,30 @@ public class TriggerPattern
 	{
 		return getValue().toString();
 	}
-	
+
 	@Override
 	public int hashCode()
 	{
 		return getValue().hashCode();
 	}
-	
+
 	/**
 	 * @return
 	 */
 	@JsonIgnore
 	public Observable<Instant> asObservable()
 	{
-		return this.values;
+		if (getValue() instanceof Instant)
+			return Observable.just((Instant) getValue());
+
+		if (getValue() instanceof String)
+			return parseInstantOrIntervalOrRule((String) getValue());
+
+		throw new IllegalArgumentException("Can't convert "
+				+ getValue().getClass().getName());
 	}
 
-	public static Iterable<Instant> createIterableInstant(
+	/*public static Iterable<Instant> createIterableInstant(
 			final CronTrigger trigger)
 	{
 		return new Iterable<Instant>()
@@ -228,7 +231,7 @@ public class TriggerPattern
 			{
 				return new Iterator<Instant>()
 				{
-					/** */
+					*//** *//*
 					private Date current = trigger.getStartTime();
 
 					@Override
@@ -255,7 +258,8 @@ public class TriggerPattern
 			}
 		};
 	}
-
+*/
+	
 	/**
 	 * @param jsonRecurrence
 	 * @return
@@ -265,18 +269,20 @@ public class TriggerPattern
 		return JsonUtil.valueOf(json, TriggerPattern.class);
 	}
 
-	/** */
-	private static final Logger LOG = LogManager
-			.getLogger(TriggerPattern.class);
-
 	public static class JsonSerializer extends
 			com.fasterxml.jackson.databind.JsonSerializer<TriggerPattern>
 	{
+		public JsonSerializer()
+		{
+			LOG.trace("Created " + getClass().getName());
+		}
+
+		@Override
 		public void serialize(final TriggerPattern value,
 				final JsonGenerator gen, final SerializerProvider serializers)
 				throws IOException, JsonProcessingException
 		{
-			LOG.trace("Serializing " + value);
+			// LOG.trace("Serializing " + value);
 			gen.writeString(value.toString());
 		}
 	}
@@ -284,12 +290,17 @@ public class TriggerPattern
 	public static class JsonDeserializer extends
 			com.fasterxml.jackson.databind.JsonDeserializer<TriggerPattern>
 	{
+		public JsonDeserializer()
+		{
+			LOG.trace("Created " + getClass().getName());
+		}
+
 		@Override
 		public TriggerPattern deserialize(final JsonParser p,
 				final DeserializationContext ctxt) throws IOException,
 				JsonProcessingException
 		{
-			LOG.trace("Deserializing " + p.getText());
+			// LOG.trace("Deserializing " + p.getText());
 			return p.getCurrentToken().isNumeric() ? new TriggerPattern(p
 					.getNumberValue().doubleValue()) : new TriggerPattern(
 					p.getText());

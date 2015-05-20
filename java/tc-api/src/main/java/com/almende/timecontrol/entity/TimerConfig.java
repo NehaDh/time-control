@@ -54,7 +54,8 @@ public interface TimerConfig extends Comparable<TimerConfig>, Accessible
 	 * the (root) {@link ClockConfig}
 	 */
 	@Key(TimeControl.CLOCK_KEY)
-	ClockConfig clock();
+	@DefaultValue("rootClock")
+	ClockConfig.ID rootClockId();
 
 	/**
 	 * the simulated time {@link Duration} between <b>discrete</b> ticks of this

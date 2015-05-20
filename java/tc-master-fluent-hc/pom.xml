@@ -27,11 +27,11 @@
 			<url>https://github.com/krevelen/coala/raw/mvn-repo/</url>
 			<releases>
 				<enabled>true</enabled>
-				<updatePolicy>daily</updatePolicy>
+				<updatePolicy>never</updatePolicy>
 			</releases>
 			<snapshots>
 				<enabled>false</enabled>
-				<updatePolicy>never</updatePolicy>
+				<updatePolicy>daily</updatePolicy>
 			</snapshots>
 		</repository>
 		<!-- Time-control public Maven repository -->
@@ -45,7 +45,7 @@
 			</releases>
 			<snapshots>
 				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
+				<updatePolicy>daily</updatePolicy>
 			</snapshots>
 		</repository>
 	</repositories>
@@ -63,6 +63,7 @@
 			<artifactId>wink-server</artifactId>
 			<version>${wink.version}</version>
 		</dependency>
+			
 		<dependency>
 			<groupId>io.coala</groupId>
 			<artifactId>coala-httpclient4-adapter</artifactId>

@@ -1,0 +1,75 @@
+# $Id$
+# $URL$
+
+status: TRACE
+monitorInterval: 900 # 15 min = 900 sec
+
+properties:
+    property:
+        -
+            name: pattern_layout_full
+            value: "%d{HH:mm:ss.SSS} %-5p [%t] %m [at %C{1}.%M(%F:%L)]%n"
+
+        -
+            name: log_path
+            value: "./log"
+
+appenders:
+    console:
+        -
+            name: CONSOLE
+            PatternLayout:
+                pattern: ${pattern_layout_full}
+
+    file:
+        -
+            name: TRACE_FILE
+            fileName: ${log_path}/trace.log
+            append: false
+            PatternLayout:
+                pattern: "${pattern_layout_full}"
+
+loggers:
+    root:
+        level: TRACE
+        appenderRef:
+            ref: TRACE_FILE
+    logger:
+        -   
+            name: org.apache.logging
+#            additivity: false
+            appenderRef:
+                -
+                    level: WARN
+                    ref: CONSOLE
+                -
+                    level: INFO
+                    ref: TRACE_FILE
+        -   
+            name: org.apache.http
+#            additivity: false
+            appenderRef:
+                -
+                    level: INFO
+                    ref: CONSOLE
+                -
+                    level: INFO
+                    ref: TRACE_FILE
+        -   
+            name: org.eclipse.jetty
+#            additivity: false
+            appenderRef:
+                -
+                    level: INFO
+                    ref: CONSOLE
+                -
+                    level: INFO
+                    ref: TRACE_FILE
+        -   
+            name: com.almende
+#            additivity: false
+            appenderRef:
+                -
+                    level: INFO
+                    ref: CONSOLE
+                    

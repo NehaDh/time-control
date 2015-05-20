@@ -35,7 +35,6 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -49,7 +48,7 @@ public class FileUtil // implements Util
 {
 
 	/** */
-	private static final Logger LOG = LogManager.getLogger(FileUtil.class);
+	private static final Logger LOG = LogUtil.getLogger(FileUtil.class);
 
 	/**
 	 * {@link FileUtil} constructor
@@ -119,8 +118,7 @@ public class FileUtil // implements Util
 	 * @return
 	 * @throws IOException
 	 */
-	public static InputStream toInputStream(final URL path)
-			throws IOException
+	public static InputStream toInputStream(final URL path) throws IOException
 	{
 		return toInputStream(path.toExternalForm());
 	}

@@ -30,26 +30,35 @@ import com.almende.timecontrol.entity.ClockConfig.ID;
 import com.eaio.uuid.UUID;
 
 /**
- * {@link EveAgentAPI} exposes the agent's internal events (until external event
+ * {@link EveTimeAgentAPI} exposes the agent's internal events (until external event
  * pub/sub is available)
  * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public interface EveAgentAPI extends AgentInterface
+public interface EveTimeAgentAPI extends AgentInterface
 {
 
+	/** */
+	String ID_PARAM = "id";
+	
+	/** */
+	String CONFIG_PARAM = "config";
+
+	/** */
+	String PATTERN_PARAM = "pattern";
+	
 	/** the agent's (internal) events, only directly accessible */
 	@Access(AccessType.UNAVAILABLE)
-	Observable<AgentEvent> events();
+	Observable<AgentEventType> events();
 
 	/**
 	 * @date $Date$
 	 * @version $Id$
 	 * @author <a href="mailto:rick@almende.org">Rick</a>
 	 */
-	enum AgentEvent
+	enum AgentEventType
 	{
 		/** */
 		AGENT_INITIALIZED,

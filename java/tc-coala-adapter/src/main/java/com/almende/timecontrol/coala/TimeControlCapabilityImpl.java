@@ -48,7 +48,6 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.inject.Inject;
 
-import org.aeonbits.owner.ConfigFactory;
 import org.apache.log4j.Logger;
 
 import rx.Observable;
@@ -56,7 +55,7 @@ import rx.Observer;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
-import com.almende.timecontrol.api.eve.EveAgentAPI;
+import com.almende.timecontrol.api.eve.EveTimeAgentAPI;
 import com.almende.timecontrol.entity.ClockConfig;
 import com.almende.timecontrol.entity.ClockConfig.Status;
 import com.almende.timecontrol.entity.ClockEvent;
@@ -110,7 +109,7 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 	private final TimerConfig timerConfig;
 
 	/** */
-	private volatile SimTime time = SimTime.ZERO;
+	private volatile SimTime time = null;
 
 	/** */
 	private volatile ClockEvent clock = null;
@@ -127,6 +126,7 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 		this.config = getBinder().inject(ReplicationConfig.class);
 		this.newTime = this.config.newTime();
 		this.baseTimeUnit = this.config.getBaseTimeUnit();
+		this.time = this.newTime.create(0, this.baseTimeUnit);
 
 		// ConfigFactory.create(SlaveConfig.class);
 		// final SlaveConfig slaveConfig =
@@ -149,7 +149,7 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 		this.timeManagerClient = TimeManagerClientAgent.getInstance(timerID,
 				clientID);
 		this.timeManagerClient.events().subscribe(
-				new Observer<EveAgentAPI.AgentEvent>()
+				new Observer<EveTimeAgentAPI.AgentEventType>()
 				{
 					@Override
 					public void onCompleted()
@@ -164,14 +164,14 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 					}
 
 					@Override
-					public void onNext(final EveAgentAPI.AgentEvent event)
+					public void onNext(final EveTimeAgentAPI.AgentEventType event)
 					{
 						LOG.info("Proxy status: " + event);
 					}
 				});
 		final CountDownLatch clockReadyLatch = new CountDownLatch(1);
-		this.timeManagerClient.observeClock(ClockConfig.ID.valueOf(clientID))
-				.subscribe(new Observer<ClockEvent>()
+		this.timeManagerClient.observeClock().subscribe(
+				new Observer<ClockEvent>()
 				{
 					@Override
 					public void onCompleted()
@@ -193,10 +193,11 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 					}
 				});
 		// may be redundant
-		final TimerConfig config = ConfigFactory.create(TimerConfig.class);
-		LOG.trace("Initializing timer with config: " + config);
+		// TODO add default root clock explicitly in builder
+		// final TimerConfig config = ConfigFactory.create(TimerConfig.class);
+		// LOG.trace("Initializing timer with config: " + config);
 		// timer.setProperty(TimeControl.ID_KEY, timerID);
-		this.timeManagerClient.setTimerConfig(config);
+		// this.timeManagerClient.setTimerConfig(config);
 		this.timerConfig = this.timeManagerClient.getTimerConfig();
 		LOG.trace("Initialized timer with config: " + this.timerConfig);
 	}
@@ -299,19 +300,8 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 			final SimTime instant = this.newTime
 					.create(trigger.getStartTime().toUnit(this.baseTimeUnit)
 							.doubleValue(), this.baseTimeUnit);
-			final TriggerPattern rule = /*new RecurrenceRule(trigger, trigger
-										.getInstants().map(
-										new Func1<io.coala.time.Instant<?>, Instant>()
-										{
-										@Override
-										public Instant call(
-										final io.coala.time.Instant<?> t)
-										{
-										return Instant.valueOf(TimeUnit.MILLIS
-											.convertFrom(t).longValue());
-										}
-										}));*/
-			new TriggerPattern(instant.getIsoTime().getTime());
+			final TriggerPattern rule = new TriggerPattern(instant.getIsoTime()
+					.getTime());
 			final TriggerConfig trig = TriggerConfig.Builder.fromID(id)
 					.withPattern(rule).build();
 			PENDING_JOBS.put(trig.id(), job);
@@ -342,8 +332,9 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 			setTime(job.time());
 			synchronized (PENDING_JOBS)
 			{
-				final Job<?> todo = job.lastCall() ? PENDING_JOBS.remove(job
-						.triggerId()) : PENDING_JOBS.get(job.triggerId());
+				final Job<?> todo = job.isPatternCompleted() ? PENDING_JOBS
+						.remove(job.triggerId()) : PENDING_JOBS.get(job
+						.triggerId());
 				if (todo == null)
 					LOG.warn("trigger no longer available: " + job.triggerId());
 				else if (!Callable.class.isAssignableFrom(todo.getClass()))
@@ -377,17 +368,17 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 	@Override
 	public void start()
 	{
-		this.timeManagerClient.updateClock(ClockConfig.Builder
-				.forID(this.config.getClockName()).withStatus(Status.RUNNING)
-				.build());
+		this.timeManagerClient.updateClock(new ClockConfig.Builder()
+				.withId(this.timeManagerClient.getTimerConfig().rootClockId())
+				.withStatus(Status.RUNNING).build());
 	}
 
 	@Override
 	public void pause()
 	{
-		this.timeManagerClient.updateClock(ClockConfig.Builder
-				.forID(this.config.getClockName()).withStatus(Status.WAITING)
-				.build());
+		this.timeManagerClient.updateClock(new ClockConfig.Builder()
+				.withId(this.timeManagerClient.getTimerConfig().rootClockId())
+				.withStatus(Status.WAITING).build());
 	}
 
 	@Override

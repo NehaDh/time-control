@@ -53,14 +53,17 @@ public interface TriggerEvent extends Comparable<TriggerEvent>
 	 */
 	TriggerConfig.ID triggerId();
 
-	/** the simulated time {@link Instant} when this {@link TriggerEvent} occurs */
+	/**
+	 * the simulated time {@link Instant} when this {@link TriggerEvent} occurs,
+	 * or {@code null} if {@link #isPatternCompleted}
+	 */
 	Duration time();
 
 	/**
-	 * @return {@code true} iff this is the last {@link TriggerEvent} created by its
-	 *         {@link TriggerConfig}, {@code false} otherwise
+	 * @return {@code true} iff this is the last {@link TriggerEvent} created by
+	 *         its {@link TriggerConfig}, {@code false} otherwise
 	 */
-	boolean lastCall();
+	boolean isPatternCompleted();
 
 	/**
 	 * {@link ID}

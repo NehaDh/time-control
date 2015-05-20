@@ -36,7 +36,7 @@ import com.almende.timecontrol.time.TriggerPattern;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public interface EveTimeObserverClientAPI extends EveAgentAPI
+public interface EveTimeObserverClientAPI extends EveTimeAgentAPI
 {
 
 	/**

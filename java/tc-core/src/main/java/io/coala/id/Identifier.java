@@ -49,7 +49,7 @@ public abstract class Identifier<T extends Comparable<T>> implements
 {
 
 	/** */
-	// private static final Logger LOG = LogManager.getLogger(Identifier.class);
+	// private static final Logger LOG = LogUtil.getLogger(Identifier.class);
 
 	/** TODO remove this private field, in favor of DynaBean? */
 	private T value = null;

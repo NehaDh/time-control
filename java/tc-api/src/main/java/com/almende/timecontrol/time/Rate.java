@@ -162,11 +162,17 @@ public class Rate extends DecimalMeasure<Dimensionless>
 	public static class JsonSerializer extends
 			com.fasterxml.jackson.databind.JsonSerializer<Rate>
 	{
+		public JsonSerializer()
+		{
+			LOG.trace("Created " + getClass().getName());
+		}
+
+		@Override
 		public void serialize(final Rate value, final JsonGenerator gen,
 				final SerializerProvider serializers) throws IOException,
 				JsonProcessingException
 		{
-			LOG.trace("Serializing " + value);
+			// LOG.trace("Serializing " + value);
 			gen.writeString(value.toString());
 		}
 	}
@@ -174,12 +180,17 @@ public class Rate extends DecimalMeasure<Dimensionless>
 	public static class JsonDeserializer extends
 			com.fasterxml.jackson.databind.JsonDeserializer<Rate>
 	{
+		public JsonDeserializer()
+		{
+			LOG.trace("Created " + getClass().getName());
+		}
+
 		@Override
 		public Rate deserialize(final JsonParser p,
 				final DeserializationContext ctxt) throws IOException,
 				JsonProcessingException
 		{
-			LOG.trace("Deserializing " + p.getText());
+			// LOG.trace("Deserializing " + p.getText());
 			return Rate.valueOf(p.getText());
 		}
 	}

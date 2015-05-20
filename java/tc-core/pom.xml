@@ -7,6 +7,7 @@
 		<groupId>com.almende.time-control</groupId>
 		<artifactId>tc-parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<artifactId>tc-core</artifactId>
@@ -18,8 +19,6 @@
 		<rxjava.version>0.20.7</rxjava.version>
 		<uuid.version>3.4</uuid.version>
 		<owner.version>1.0.6</owner.version>
-
-		<log4j-slf4j-impl.version>2.0-beta4</log4j-slf4j-impl.version>
 	</properties>
 
 	
@@ -35,7 +34,7 @@
 			</releases>
 			<snapshots>
 				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
+				<updatePolicy>daily</updatePolicy>
 			</snapshots>
 		</repository>
 		<repository>
@@ -59,9 +58,13 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.apache.logging.log4j.adapters</groupId>
+			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-slf4j-impl</artifactId>
-			<version>${log4j-slf4j-impl.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-jul</artifactId>
 		</dependency>
 
 		<dependency>

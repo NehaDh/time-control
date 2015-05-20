@@ -40,7 +40,7 @@ import com.almende.timecontrol.time.TriggerPattern;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public interface EveTimeObserverAPI extends TimeObserverAPI, EveAgentAPI
+public interface EveTimeObserverAPI extends TimeObserverAPI, EveTimeAgentAPI
 {
 
 	/** for JSON-RPC of {@link Observable} {@link #observeClock()} */
@@ -52,12 +52,13 @@ public interface EveTimeObserverAPI extends TimeObserverAPI, EveAgentAPI
 	 * {@link EveTimeObserverClientAPI#notifyClock(SubscriptionID,ClockConfig)}
 	 */
 	@Override
+	@Access(AccessType.UNAVAILABLE)
 	Observable<ClockEvent> observeClock();
 
 	/** for JSON-RPC of {@link Observable} {@link #observeClock(ClockConfig.ID)} */
 	@Access(AccessType.PUBLIC)
 	SubscriptionID observeClockCallback(
-			@Optional @Name("clockId") ClockConfig.ID clockId,
+			@Optional @Name(ID_PARAM) ClockConfig.ID clockId,
 			@Optional @Sender String callbackURI);
 
 	/**
@@ -75,7 +76,7 @@ public interface EveTimeObserverAPI extends TimeObserverAPI, EveAgentAPI
 	 */
 	@Access(AccessType.PUBLIC)
 	SubscriptionID registerTriggerCallback(
-			@Name("pattern") TriggerPattern pattern,
+			@Name(PATTERN_PARAM) TriggerPattern pattern,
 			@Optional @Sender String callbackURI);
 
 	/**
@@ -93,8 +94,8 @@ public interface EveTimeObserverAPI extends TimeObserverAPI, EveAgentAPI
 	 */
 	@Access(AccessType.PUBLIC)
 	SubscriptionID registerTriggerCallback(
-			@Optional @Name("clockId") ClockConfig.ID clockId,
-			@Name("pattern") TriggerPattern pattern,
+			@Optional @Name(ID_PARAM) ClockConfig.ID clockId,
+			@Name(PATTERN_PARAM) TriggerPattern pattern,
 			@Optional @Sender String callbackURI);
 
 	/**

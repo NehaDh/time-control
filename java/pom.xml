@@ -25,9 +25,10 @@
 		<validation-api.version>1.1.0.Final</validation-api.version>
 		<jsr-275.version>1.0.0</jsr-275.version>
 
-		<log4j2.version>2.2</log4j2.version>
+		<log4j2.version>2.3</log4j2.version>
 		<junit.version>4.12</junit.version>
 		<jackson.version>2.4.5</jackson.version>
+		<httpcomponents.version>4.3.4</httpcomponents.version>
 
 		<maven-dependency-plugin.version>2.4</maven-dependency-plugin.version>
 		<maven-compiler-plugin.version>2.3.2</maven-compiler-plugin.version>
@@ -55,7 +56,11 @@
 		<module>tc-api-eve</module>
 		<module>tc-master-eve</module>
 		<module>tc-slave-eve</module>
+
+		<!-- COALA/Eve client -->
 		<module>tc-coala-adapter</module>
+
+		<!-- HTTP server -->
 		<module>tc-master-fluent-hc</module>
 	</modules>
 
@@ -151,6 +156,12 @@
 			</dependency>
 
 			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-slf4j-impl</artifactId>
+				<version>${log4j2.version}</version>
+			</dependency>
+
+			<dependency>
 				<!-- Java Extension API for servlets -->
 				<groupId>javax.servlet</groupId>
 				<artifactId>javax.servlet-api</artifactId>
@@ -191,6 +202,18 @@
 				<groupId>javax.measure</groupId>
 				<artifactId>jsr-275</artifactId>
 				<version>${jsr-275.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpclient</artifactId>
+				<version>${httpcomponents.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>fluent-hc</artifactId>
+				<version>${httpcomponents.version}</version>
 			</dependency>
 
 			<dependency>

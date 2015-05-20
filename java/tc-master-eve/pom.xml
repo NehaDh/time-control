@@ -12,6 +12,13 @@
 	<artifactId>tc-master-eve</artifactId>
 
 	<properties>
+		<dist.dir>${basedir}/dist</dist.dir>
+		<main.class>com.almende.timecontrol.eve.MAS</main.class>
+
+		<maven-clean-plugin.version>2.6.1</maven-clean-plugin.version>
+		<maven-jar-plugin.version>2.6</maven-jar-plugin.version>
+		<maven-dependency-plugin.version>2.10</maven-dependency-plugin.version>
+		<maven.shade.version>2.3</maven.shade.version>
 	</properties>
 
 	<repositories>
@@ -26,7 +33,7 @@
 			</releases>
 			<snapshots>
 				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
+				<updatePolicy>daily</updatePolicy>
 			</snapshots>
 		</repository>
 	</repositories>
@@ -37,9 +44,9 @@
 				programming) -->
 			<groupId>javax.inject</groupId>
 			<artifactId>javax.inject</artifactId>
-			<scope>provided</scope>
+			<!-- required at runtime! <scope>provided</scope> -->
 		</dependency>
-		
+
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tc-api-eve</artifactId>
@@ -59,4 +66,80 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<!-- <plugin> <artifactId>maven-clean-plugin</artifactId> <version>${maven-clean-plugin.version}</version> 
+				<configuration> <filesets> <fileset> <directory>${dist.dir}</directory> <includes> 
+				<include>**/*.jar</include> <include>**/*.log</include> </includes> <followSymlinks>false</followSymlinks> 
+				</fileset> </filesets> </configuration> </plugin> -->
+
+			<!-- copy (non-"provided"-scope) dependency jars to ${AOS}/lib/shared -->
+			<plugin>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<excludeGroupIds>junit</excludeGroupIds>
+							<includeScope>runtime</includeScope>
+							<outputDirectory>${dist.dir}/lib</outputDirectory>
+							<silent>false</silent>
+							<overWriteIfNewer>true</overWriteIfNewer>
+							<overWriteReleases>false</overWriteReleases>
+							<overWriteSnapshots>false</overWriteSnapshots>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- set main class -->
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>${maven-jar-plugin.version}</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>${main.class}</mainClass>
+							<addClasspath>true</addClasspath>
+							<classpathPrefix>lib/</classpathPrefix>
+							<useUniqueVersions>false</useUniqueVersions>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-jar</id>
+						<phase>package</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<copy
+									file="${project.build.directory}/${project.build.finalName}.${project.packaging}"
+									tofile="${dist.dir}/${project.artifactId}.${project.packaging}" />
+							</tasks>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- <plugin> <artifactId>maven-shade-plugin</artifactId> <version>${maven.shade.version}</version> 
+				<executions> <execution> <phase>package</phase> <goals> <goal>shade</goal> 
+				</goals> <configuration> <finalName>${project.artifactId}-full</finalName> 
+				<outputDirectory>${dist.dir}</outputDirectory> <transformers> <transformer 
+				implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"> 
+				<mainClass>${main.class}</mainClass> </transformer> </transformers> </configuration> 
+				</execution> </executions> </plugin> -->
+		</plugins>
+	</build>
 </project>

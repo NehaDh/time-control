@@ -23,6 +23,7 @@ package com.almende.timecontrol.api.eve;
 import static org.aeonbits.owner.util.Collections.entry;
 import static org.aeonbits.owner.util.Collections.map;
 import io.coala.util.JsonUtil;
+import io.coala.util.LogUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +33,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.aeonbits.owner.ConfigFactory;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 
@@ -43,7 +43,7 @@ import com.almende.eve.agent.AgentConfig;
 import com.almende.eve.capabilities.Config;
 import com.almende.eve.config.YamlReader;
 import com.almende.eve.transport.http.embed.JettyLauncher;
-import com.almende.timecontrol.api.eve.EveAgentAPI.AgentEvent;
+import com.almende.timecontrol.api.eve.EveTimeAgentAPI.AgentEventType;
 import com.almende.util.jackson.JOM;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,15 +54,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * {@link EveUtil}
  * 
  * @date $Date$
- * @version $Revision$
- * @author <a href="mailto:gebruiker@almende.org">gebruiker</a>
- *
+ * @version $Id$
+ * @author <a href="mailto:rick@almende.org">Rick</a>
  */
 public class EveUtil
 {
 
 	/** */
-	private static final Logger LOG = LogManager.getLogger(EveUtil.class);
+	private static final Logger LOG = LogUtil.getLogger(EveUtil.class);
 
 	public static void checkRegistered(final Class<?> type)
 	{
@@ -92,8 +91,8 @@ public class EveUtil
 	/** */
 	@SuppressWarnings("unchecked")
 	@SafeVarargs
-	public static final <T extends EveAgentAPI> T valueOf(
-			final AgentConfig agentConfig, final Class<T> agentType,
+	public static final <T extends EveTimeAgentAPI> T valueOf(
+			final AgentConfig agentConfig, //final Class<T> agentType,
 			final Map.Entry<String, ? extends JsonNode>... parameters)
 	{
 		synchronized (EveUtil.class)
@@ -118,7 +117,7 @@ public class EveUtil
 		// @Override
 		// public void call()
 		// {
-		result.events().subscribe(new Observer<AgentEvent>()
+		result.events().subscribe(new Observer<AgentEventType>()
 		{
 			@Override
 			public void onCompleted()
@@ -135,11 +134,11 @@ public class EveUtil
 			}
 
 			@Override
-			public void onNext(final AgentEvent event)
+			public void onNext(final AgentEventType event)
 			{
 				LOG.trace("Agent {} produced event: {}", agentConfig.getId(),
 						event);
-				if (event == AgentEvent.AGENT_INITIALIZED)
+				if (event == AgentEventType.AGENT_INITIALIZED)
 					waitUntilInit.countDown();
 			}
 		});
@@ -158,16 +157,14 @@ public class EveUtil
 
 	/** */
 	@SafeVarargs
-	public static final <T extends EveAgentAPI> T valueOf(final String id,
+	public static final <T extends EveTimeAgentAPI> T valueOf(final String id,
 			final Class<T> agentType,
 			final Map.Entry<String, ? extends JsonNode>... parameters)
 	{
-		@SuppressWarnings("unchecked")
 		final EveAgentConfig cfg = ConfigFactory.create(
 				EveAgentConfig.class,
 				EveAgentConfig.DEFAULT_VALUES,
 				map(entry(EveAgentConfig.AGENT_CLASS_KEY, agentType.getName()),
-						entry(EveAgentConfig.AGENT_ID_KEY, id),
 						entry(EveAgentConfig.AGENT_ID_KEY, id)));
 
 		final InputStream is = cfg.agentConfigStream();
@@ -190,13 +187,14 @@ public class EveUtil
 
 				LOG.info("Creating agent {} from config at {}", id,
 						cfg.agentConfigUri());
-				return valueOf(new AgentConfig((ObjectNode) agent), agentType,
+				return valueOf(new AgentConfig((ObjectNode) agent), //agentType,
 						parameters);
 			}
 		}
 		LOG.info("No config found at {} for agent: {}. "
 				+ "Using default config", cfg.agentConfigUri(), id);
-		return valueOf(cfg.agentConfig(), agentType, parameters);
+		return valueOf(cfg.agentConfig(), //agentType, 
+				parameters);
 	}
 
 	public static void stop() throws Exception

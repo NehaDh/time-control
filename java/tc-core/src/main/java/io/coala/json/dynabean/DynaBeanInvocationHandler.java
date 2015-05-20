@@ -22,6 +22,7 @@ package io.coala.json.dynabean;
 
 import io.coala.error.ExceptionBuilder;
 import io.coala.util.JsonUtil;
+import io.coala.util.LogUtil;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -32,7 +33,6 @@ import java.util.Map;
 import org.aeonbits.owner.Config;
 import org.aeonbits.owner.ConfigFactory;
 import org.aeonbits.owner.Mutable;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -45,7 +45,7 @@ import org.apache.logging.log4j.Logger;
 public class DynaBeanInvocationHandler implements InvocationHandler
 {
 	/** */
-	private static final Logger LOG = LogManager
+	private static final Logger LOG = LogUtil
 			.getLogger(DynaBeanInvocationHandler.class);
 
 	/** */

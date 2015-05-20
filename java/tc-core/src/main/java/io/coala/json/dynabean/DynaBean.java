@@ -23,6 +23,7 @@ package io.coala.json.dynabean;
 import io.coala.error.ExceptionBuilder;
 import io.coala.id.Identifier;
 import io.coala.util.JsonUtil;
+import io.coala.util.LogUtil;
 
 import java.io.IOException;
 import java.lang.annotation.Documented;
@@ -48,7 +49,6 @@ import javax.inject.Provider;
 import org.aeonbits.owner.Accessible;
 import org.aeonbits.owner.Config;
 import org.aeonbits.owner.ConfigFactory;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -83,7 +83,7 @@ public class DynaBean implements Cloneable
 {
 
 	/** */
-	static final Logger LOG = LogManager.getLogger(DynaBean.class);
+	static final Logger LOG = LogUtil.getLogger(DynaBean.class);
 
 	/** leave null as long as possible */
 	@JsonIgnore

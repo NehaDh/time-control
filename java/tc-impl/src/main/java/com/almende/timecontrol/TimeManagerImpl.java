@@ -107,7 +107,13 @@ public class TimeManagerImpl implements TimeManagerAPI
 	}
 
 	@Override
-	public TimerConfig getTimerConfig()
+	public synchronized void setTimerConfig(final TimerConfig config)
+	{
+		this.config = config;
+	}
+
+	@Override
+	public synchronized TimerConfig getTimerConfig()
 	{
 		return this.config;
 	}
@@ -139,23 +145,38 @@ public class TimeManagerImpl implements TimeManagerAPI
 	}
 
 	@Override
-	public void setTimerConfig(final TimerConfig config)
+	public ClockConfig getClock(final ClockConfig.ID clockId)
 	{
-		this.config = config;
+		final ClockTuple result;
+		if (clockId == null)
+			result = this.clocks.get(getTimerConfig().rootClockId());
+		else
+		{
+			result = this.clocks.get(clockId);
+			if (result == null)
+			{
+				LOG.error(
+						"No clock {} set or no root clock in timer config: {}",
+						clockId, getTimerConfig());
+				return null;
+			}
+		}
+		LOG.trace("Found clock {} config: {}", result.config);
+		return result.config;
 	}
 
 	@Override
 	public void updateClock(final ClockConfig config)
 	{
-		final ClockConfig.ID clockId = config.id() == null ? getTimerConfig()
-				.clock().id() : config.id();
+		final ClockConfig.ID clockId = config.id();
+		LOG.trace("Updating clock: " + clockId);
 		synchronized (this.clocks)
 		{
 			ClockTuple result = this.clocks.get(clockId);
 			if (result == null)
 			{
 				result = new ClockTuple(config);
-				this.clocks.put(config.id(), result);
+				this.clocks.put(clockId, result);
 			} else
 			{
 				for (String key : config.propertyNames())
@@ -169,7 +190,7 @@ public class TimeManagerImpl implements TimeManagerAPI
 					{
 						result.config.setProperty(key, newValue);
 						if (key.equals(TimeControl.DRAG_KEY))
-							reschedule(config.id(), config.drag());
+							reschedule(clockId, config.drag());
 					}
 				}
 			}
@@ -185,22 +206,34 @@ public class TimeManagerImpl implements TimeManagerAPI
 	@Override
 	public Observable<ClockEvent> observeClock(final ClockConfig.ID id)
 	{
-		final ClockConfig.ID clockId = id == null ? getTimerConfig().clock()
-				.id() : id;
+		LOG.trace("Observing clock " + id + ", config: " + getTimerConfig());
+		LOG.trace("Root clock: " + getTimerConfig().rootClockId());
+		final ClockConfig.ID clockId = id == null ? getTimerConfig()
+				.rootClockId() : id;
 		synchronized (this.clocks)
 		{
-			final ClockTuple result = this.clocks.get(clockId);
-			if (result == null)
-				throw ExceptionBuilder.unchecked("CLOCK UNKNOWN: " + id)
-						.build();
-			return result.events.asObservable();
+			ClockTuple tuple = this.clocks.get(clockId);
+			if (tuple == null)
+			{
+				if (id != null && !getTimerConfig().rootClockId().equals(id))
+					throw ExceptionBuilder.unchecked(
+							"CLOCK UNKNOWN: " + clockId).build();
+
+				tuple = new ClockTuple(new ClockConfig.Builder()
+						.withId(clockId).build());
+				this.clocks.put(clockId, tuple);
+				LOG.warn("Root clock not initialized, using defaults: "
+						+ tuple.config);
+
+			}
+			return tuple.events.asObservable();
 		}
 	}
 
 	@Override
 	public void removeClock(final ClockConfig.ID clockId)
 	{
-		if (getTimerConfig().clock().id().equals(clockId))
+		if (getTimerConfig().rootClockId().equals(clockId))
 			throw ExceptionBuilder.unchecked(
 					"Can't remove root clock: " + clockId).build();
 		destroyClock(clockId);
@@ -216,8 +249,8 @@ public class TimeManagerImpl implements TimeManagerAPI
 	public Observable<TriggerEvent> registerTrigger(final ClockConfig.ID id,
 			final TriggerPattern pattern)
 	{
-		final ClockConfig.ID clockId = id == null ? getTimerConfig().clock()
-				.id() : id;
+		final ClockConfig.ID clockId = id == null ? getTimerConfig()
+				.rootClockId() : id;
 		LOG.trace("Registering trigger pattern {} on clock {}", pattern,
 				clockId);
 
@@ -226,8 +259,8 @@ public class TimeManagerImpl implements TimeManagerAPI
 			@Override
 			public void call(final Subscriber<? super TriggerEvent> sub)
 			{
-				// TODO start scheduling at specified clock according to
-				// specified pattern
+				// TODO start scheduling according to
+				// specified pattern and clock pace
 
 			}
 		});
@@ -262,9 +295,17 @@ public class TimeManagerImpl implements TimeManagerAPI
 
 	private static Map<String, TimeManagerAPI> TIMER_CACHE = new HashMap<>();
 
-	public static TimeManagerAPI getInstance(final String id)
+	public static synchronized TimeManagerAPI getInstance(final String id)
 	{
-		final ClockConfig clock = ClockConfig.Builder.forID("clock1")
+		TimeManagerAPI cachedResult = TIMER_CACHE.get(id);
+		if (cachedResult != null)
+		{
+			LOG.trace("Return cached timer instance: {}", id);
+			return cachedResult;
+		}
+
+		LOG.warn("Initializing default config for timer: " + id);
+		final ClockConfig clock = ClockConfig.Builder.forID(id)
 				.withDrag(Rate.valueOf(100)).build();
 		final TimerConfig config = TimerConfig.Builder
 				.forID(id)
@@ -279,13 +320,15 @@ public class TimeManagerImpl implements TimeManagerAPI
 	public static synchronized TimeManagerAPI getInstance(
 			final TimerConfig config)
 	{
-		TimeManagerAPI result = TIMER_CACHE.get(config.id().getValue());
-		if (result == null)
+		TimeManagerAPI cachedResult = TIMER_CACHE.get(config.id().getValue());
+		if (cachedResult == null)
 		{
-			result = new TimeManagerImpl();
-			result.setTimerConfig(config);
-			TIMER_CACHE.put(config.id().getValue(), result);
-		}
-		return result;
+			cachedResult = new TimeManagerImpl();
+			TIMER_CACHE.put(config.id().getValue(), cachedResult);
+			cachedResult.setTimerConfig(config);
+			LOG.trace("Cached new timer instance with config: {}", config);
+		} else
+			cachedResult.setTimerConfig(config);
+		return cachedResult;
 	}
 }

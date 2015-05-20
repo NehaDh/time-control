@@ -236,7 +236,7 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	/**
 	 * for "natural" Config value conversion
 	 * 
-	 * @see Converters.CLASS_WITH_VALUE_OF_METHOD
+	 * @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD
 	 */
 	public static TimeSpan valueOf(final String measure)
 	{
@@ -244,9 +244,6 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	}
 
 	/**
-	 * for "natural" Config value conversion
-	 * 
-	 * @see Converters.CLASS_WITH_VALUE_OF_METHOD
 	 */
 	public static TimeSpan valueOf(final Number measure)
 	{
@@ -256,11 +253,17 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	public static class JsonSerializer extends
 			com.fasterxml.jackson.databind.JsonSerializer<TimeSpan>
 	{
+		public JsonSerializer()
+		{
+			LOG.trace("Created " + getClass().getName());
+		}
+
+		@Override
 		public void serialize(final TimeSpan value, final JsonGenerator gen,
 				final SerializerProvider serializers) throws IOException,
 				JsonProcessingException
 		{
-			LOG.trace("Serializing " + value);
+			// LOG.trace("Serializing " + value);
 			gen.writeString(value.toString());
 		}
 	}
@@ -268,12 +271,17 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	public static class JsonDeserializer extends
 			com.fasterxml.jackson.databind.JsonDeserializer<TimeSpan>
 	{
+		public JsonDeserializer()
+		{
+			LOG.trace("Created " + getClass().getName());
+		}
+
 		@Override
 		public TimeSpan deserialize(final JsonParser p,
 				final DeserializationContext ctxt) throws IOException,
 				JsonProcessingException
 		{
-			LOG.trace("Deserializing " + p.getText());
+			// LOG.trace("Deserializing " + p.getText());
 			return p.getCurrentToken().isNumeric() ? TimeSpan.valueOf(p
 					.getNumberValue()) : TimeSpan.valueOf(p.getText());
 		}

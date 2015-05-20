@@ -52,6 +52,7 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 
 	/** @return the {@link ID} of this {@link ClockConfig} */
 	@Key(TimeControl.ID_KEY)
+	@DefaultValue("rootClock")
 	ID id();
 
 	/**
@@ -60,7 +61,6 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 	 *         {@link Replication}'s root {@link ClockConfig}
 	 */
 	@Key(TimeControl.FORK_PARENT_ID_KEY)
-	@DefaultValue("")
 	ID forkParentID();
 
 	/**
@@ -72,12 +72,10 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 	 *         {@code time.equals(interval.toDuration())==true}
 	 */
 	@Key(TimeControl.FORK_TIME_KEY)
-	@DefaultValue("")
 	Duration forkTime();
 
 	/** @return the {@link Status} of this {@link ClockData} */
 	@Key(TimeControl.STATUS_KEY)
-	@DefaultValue("")
 	Status status();
 
 	/**

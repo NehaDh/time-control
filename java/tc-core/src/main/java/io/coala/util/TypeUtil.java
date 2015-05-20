@@ -36,7 +36,6 @@ import java.util.WeakHashMap;
 
 import javax.inject.Provider;
 
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -50,7 +49,7 @@ public class TypeUtil
 {
 
 	/** */
-	private static final Logger LOG = LogManager.getLogger(TypeUtil.class);
+	private static final Logger LOG = LogUtil.getLogger(TypeUtil.class);
 
 	/**
 	 * {@link TypeUtil} singleton constructor

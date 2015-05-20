@@ -2,13 +2,16 @@ package com.almende.timecontrol.eve;
 
 import static org.aeonbits.owner.util.Collections.entry;
 import io.coala.util.JsonUtil;
+import io.coala.util.LogUtil;
 
 import java.net.URI;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import rx.Observable;
@@ -17,6 +20,7 @@ import rx.subjects.ReplaySubject;
 import rx.subjects.Subject;
 
 import com.almende.eve.agent.Agent;
+import com.almende.eve.agent.AgentConfig;
 import com.almende.eve.agent.AgentProxyFactory;
 import com.almende.timecontrol.TimeManagerImpl;
 import com.almende.timecontrol.api.TimeManagerAPI;
@@ -43,18 +47,17 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 {
 
 	/** */
-	private static final Logger LOG = LogManager
-			.getLogger(TimeManagerAgent.class);
+	private static final Logger LOG = LogUtil.getLogger(TimeManagerAgent.class);
 
 	/** */
 	public static final String MASTER_CONFIG_KEY = "time-manager-config";
 
 	/** */
-	private final Subject<AgentEvent, AgentEvent> events = ReplaySubject
+	private final Subject<AgentEventType, AgentEventType> events = ReplaySubject
 			.create();
 
 	@Override
-	public Observable<AgentEvent> events()
+	public Observable<AgentEventType> events()
 	{
 		return this.events.asObservable();
 	}
@@ -81,7 +84,7 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	protected void loadConfig()
 	{
 		super.loadConfig();
-		this.events.onNext(AgentEvent.AGENT_INITIALIZED);
+		this.events.onNext(AgentEventType.AGENT_INITIALIZED);
 	}
 
 	/**
@@ -92,6 +95,7 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	 */
 	protected TimeManagerAPI getTimer()
 	{
+		LOG.trace("Getting timer instance: {}", getId());
 		return TimeManagerImpl.getInstance(getId());
 	}
 
@@ -118,8 +122,23 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	{
 		super.destroy();
 		getTimer().destroy();
-		this.events.onNext(AgentEvent.AGENT_DESTROYED);
+		this.events.onNext(AgentEventType.AGENT_DESTROYED);
 		this.events.onCompleted();
+	}
+
+	@Override
+	public JsonNode findClock(final String clockId)
+	{
+		LOG.trace("Finding clock: {}", clockId);
+		return JsonUtil.toTree(getClock(clockId == null ? null : ClockConfig.ID
+				.valueOf(clockId)));
+	}
+
+	@Override
+	public ClockConfig getClock(final ClockConfig.ID clockId)
+	{
+		LOG.trace("Finding clock: {}", clockId);
+		return getTimer().getClock(clockId);
 	}
 
 	@Override
@@ -175,6 +194,12 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 			}
 		});
 		return callbackID;
+	}
+
+	@Override
+	public void removeClock(final String clockId)
+	{
+		removeClock(ClockConfig.ID.valueOf(clockId));
 	}
 
 	@Override
@@ -239,51 +264,73 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	/**************************************************************************/
 
 	/** */
-	public static TimeManagerAgent valueOf(final TimerConfig config)
-	{
-		return valueOf(
-				config.id().getValue(),
-				entry(TimeManagerAgent.MASTER_CONFIG_KEY,
-						JsonUtil.toTree(config)));
-	}
-
-	/** */
-	@SafeVarargs
-	public static TimeManagerAgent valueOf(final String id,
-			final Map.Entry<String, ? extends JsonNode>... parameters)
-	{
-		return EveUtil.valueOf(id, TimeManagerAgent.class, parameters);
-	}
-
-	/** */
 	private static final Map<String, TimeManagerAgent> INSTANCES = new TreeMap<>();
 
 	/** */
 	public static TimeManagerAgent getInstance(final String timerID)
 	{
+		return getInstance(new AgentConfig(timerID));
+	}
+
+	/** */
+	public static TimeManagerAgent getInstance(// final String timerID,
+			final AgentConfig agentConfig)
+	{
 		synchronized (INSTANCES)
 		{
-			final TimeManagerAgent result = INSTANCES.get(timerID);
-			if (result == null)
-				return getInstance(TimerConfig.Builder.forID(timerID).build());
-			return result;
+			final TimeManagerAgent result = INSTANCES.get(agentConfig.getId());
+			if (result != null)
+				return result;
+			return getInstance(TimerConfig.Builder.forID(agentConfig.getId())
+					.build(), agentConfig);
 		}
 	}
 
 	/** */
-	public static TimeManagerAgent getInstance(final TimerConfig config)
+	public static TimeManagerAgent getInstance(final TimerConfig config,
+			final AgentConfig agentConfig)
 	{
 		synchronized (INSTANCES)
 		{
 			TimeManagerAgent result = INSTANCES.get(config.id());
-			if (result == null)
+			if (result != null)
+				result.setTimerConfig(config);
+			else
 			{
 				LOG.trace("Create master with config: {}", config);
-				result = TimeManagerAgent.valueOf(config);
+				result = EveUtil.valueOf(
+						agentConfig,
+						entry(TimeManagerAgent.MASTER_CONFIG_KEY,
+								JsonUtil.toTree(config)));
 				INSTANCES.put(config.id().getValue(), result);
 			}
 			return result;
 		}
+	}
+
+	/**
+	 * @return
+	 */
+	public static Collection<TimeManagerAgent> getInstances()
+	{
+		synchronized (INSTANCES)
+		{
+			return Collections
+					.unmodifiableCollection(new HashSet<TimeManagerAgent>(
+							INSTANCES.values()));
+		}
+	}
+
+	/**************************************************************************/
+
+	/**
+	 * Boot the Multi-Agent System
+	 *
+	 * @param args the command-line arguments
+	 */
+	public static void main(final String[] args)
+	{
+		MAS.main(args);
 	}
 
 }

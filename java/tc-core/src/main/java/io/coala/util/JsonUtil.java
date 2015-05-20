@@ -33,7 +33,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -53,7 +52,7 @@ public class JsonUtil
 {
 
 	/** */
-	private static final Logger LOG = LogManager.getLogger(JsonUtil.class);
+	private static final Logger LOG = LogUtil.getLogger(JsonUtil.class);
 
 	/** */
 	private static final ObjectMapper JOM = new ObjectMapper();

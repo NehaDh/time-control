@@ -12,10 +12,11 @@
 	<artifactId>tc-api-eve</artifactId>
 
 	<properties>
-		<eve.version>3.1.0</eve.version>
-		<jetty.version>9.2.9.v20150224</jetty.version>
+		<eve.version>3.1.1</eve.version>
+		<cors.version>1.8</cors.version>
+		<jetty.version>9.2.10.v20150310</jetty.version>
 	</properties>
-	
+
 	<repositories>
 		<!-- Time-control public Maven repository -->
 		<repository>
@@ -28,7 +29,7 @@
 			</releases>
 			<snapshots>
 				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
+				<updatePolicy>daily</updatePolicy>
 			</snapshots>
 		</repository>
 	</repositories>
@@ -46,16 +47,28 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!-- <dependency> <groupId>org.apache.wink</groupId> <artifactId>wink-server</artifactId> 
-			<version>${wink.version}</version> <exclusions> <exclusion> <groupId>org.slf4j</groupId> 
-			<artifactId>slf4j-api</artifactId> </exclusion> </exclusions> </dependency> 
-			<dependency> <groupId>org.eclipse.jetty</groupId> <artifactId>jetty-servlet</artifactId> 
-			<version>${jetty.version}</version> </dependency> -->
-
 		<dependency>
 			<groupId>org.eclipse.jetty.websocket</groupId>
 			<artifactId>javax-websocket-server-impl</artifactId>
 			<version>${jetty.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.almende.eve</groupId>
+			<artifactId>eve-scheduling-persistent</artifactId>
+			<version>${eve.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.almende.eve</groupId>
+			<artifactId>eve-deploy</artifactId>
+			<version>${eve.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.almende.eve</groupId>
+			<artifactId>eve-transport-ws</artifactId>
+			<version>${eve.version}</version>
 		</dependency>
 
 		<dependency>
@@ -85,15 +98,11 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+
 		<dependency>
-			<groupId>com.almende.eve</groupId>
-			<artifactId>eve-scheduling-persistent</artifactId>
-			<version>${eve.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.almende.eve</groupId>
-			<artifactId>eve-deploy</artifactId>
-			<version>${eve.version}</version>
+			<groupId>com.thetransactioncompany</groupId>
+			<artifactId>cors-filter</artifactId>
+			<version>${cors.version}</version>
 		</dependency>
 
 		<dependency>

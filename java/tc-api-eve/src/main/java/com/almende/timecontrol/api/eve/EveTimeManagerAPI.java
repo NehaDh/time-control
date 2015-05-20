@@ -21,10 +21,12 @@ package com.almende.timecontrol.api.eve;
 import com.almende.eve.protocol.jsonrpc.annotation.Access;
 import com.almende.eve.protocol.jsonrpc.annotation.AccessType;
 import com.almende.eve.protocol.jsonrpc.annotation.Name;
+import com.almende.eve.protocol.jsonrpc.annotation.Optional;
 import com.almende.timecontrol.api.TimeManagerAPI;
 import com.almende.timecontrol.entity.ClockConfig;
 import com.almende.timecontrol.entity.TimerConfig;
 import com.almende.timecontrol.entity.TimerStatus;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * {@link EveTimeManagerAPI} adds Eve's {@link Name} annotations to
@@ -39,14 +41,6 @@ public interface EveTimeManagerAPI extends TimeManagerAPI, EveTimeObserverAPI
 
 	@Override
 	@Access(AccessType.PUBLIC)
-	void setTimerConfig(@Name("config") TimerConfig config);
-
-	@Override
-	@Access(AccessType.PUBLIC)
-	TimerConfig getTimerConfig();
-
-	@Override
-	@Access(AccessType.PUBLIC)
 	TimerStatus getTimerStatus();
 
 	@Override
@@ -55,10 +49,32 @@ public interface EveTimeManagerAPI extends TimeManagerAPI, EveTimeObserverAPI
 
 	@Override
 	@Access(AccessType.PUBLIC)
-	void updateClock(@Name("clock") ClockConfig clock);
+	void setTimerConfig(@Name(CONFIG_PARAM) TimerConfig config);
 
 	@Override
 	@Access(AccessType.PUBLIC)
-	void removeClock(@Name("clockId") ClockConfig.ID clockId);
+	TimerConfig getTimerConfig();
+
+	/**
+	 * FIXME rename to match {@link EveTimeManagerAPI#getClock(ClockConfig.ID)}
+	 * when Eve allows overloading again
+	 */
+	@Access(AccessType.PUBLIC)
+	JsonNode findClock(@Optional @Name(ID_PARAM) String clockId);
+
+	@Override
+	@Access(AccessType.PUBLIC)
+	ClockConfig getClock(@Optional @Name(ID_PARAM) ClockConfig.ID clockId);
+
+	@Override
+	@Access(AccessType.PUBLIC)
+	void updateClock(@Name(CONFIG_PARAM) ClockConfig clock);
+
+	@Override
+	@Access(AccessType.UNAVAILABLE)
+	void removeClock(ClockConfig.ID clockId);
+
+	@Access(AccessType.PUBLIC)
+	void removeClock(@Name(ID_PARAM) String clockId);
 
 }

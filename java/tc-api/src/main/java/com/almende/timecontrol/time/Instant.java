@@ -117,9 +117,9 @@ public class Instant implements JsonWrapper<TimeSpan>
 	}
 
 	/** */
-	public static Instant valueOf(final long millis)
+	public static Instant valueOf(final Number millis)
 	{
-		return valueOf(new TimeSpan(millis));
+		return valueOf(TimeSpan.valueOf(millis));
 	}
 
 	/** */

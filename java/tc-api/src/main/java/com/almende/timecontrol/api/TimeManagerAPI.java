@@ -44,14 +44,14 @@ public interface TimeManagerAPI extends TimeObserverAPI
 	void setTimerConfig(TimerConfig config);
 
 	/**
+	 * @return the current exhaustive {@link TimerStatus} for debugging
+	 */
+	TimerStatus getTimerStatus();
+
+	/**
 	 * @return the current {@link TimerConfig}
 	 */
 	TimerConfig getTimerConfig();
-
-	/**
-	 * @return the current state of all {@link ClockConfig}s
-	 */
-	TimerStatus getTimerStatus();
 
 	/**
 	 * unregisters a {@link TimerConfig} including all of its
@@ -64,6 +64,12 @@ public interface TimeManagerAPI extends TimeObserverAPI
 	void destroy();
 
 	/**
+	 * @param clockId the {@link ClockConfig.ID}
+	 * @return the current {@link ClockConfig} for specified {@code clockId}
+	 */
+	ClockConfig getClock(ClockConfig.ID clockId);
+
+	/**
 	 * registers/updates a {@link ClockConfig}, possibly forking a split from
 	 * its parent {@link ClockConfig}'s time line
 	 * 
@@ -72,8 +78,8 @@ public interface TimeManagerAPI extends TimeObserverAPI
 	void updateClock(ClockConfig clock);
 
 	/**
-	 * unregisters a {@link ClockConfig} including all of its {@link TriggerConfig}s
-	 * and {@link TriggerEvent}s
+	 * unregisters a {@link ClockConfig} including all of its
+	 * {@link TriggerConfig}s and {@link TriggerEvent}s
 	 * 
 	 * @param name a {@link ClockConfig.ID reference} to a particular
 	 *            {@link ClockConfig}

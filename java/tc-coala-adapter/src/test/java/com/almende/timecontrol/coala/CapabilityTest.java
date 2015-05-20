@@ -30,18 +30,26 @@ import io.coala.capability.admin.CreatingCapability;
 import io.coala.capability.plan.ClockStatusUpdate;
 import io.coala.capability.replicate.ReplicatingCapability;
 import io.coala.capability.replicate.ReplicationConfig;
+import io.coala.invoke.ProcedureCall;
+import io.coala.invoke.Schedulable;
 import io.coala.log.LogUtil;
+import io.coala.model.ModelComponent;
+import io.coala.name.Identifiable;
+import io.coala.time.Instant;
+import io.coala.time.SimTime;
+import io.coala.time.Trigger;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
-import com.almende.timecontrol.eve.TimeManagerAgent;
-
 import rx.Observer;
+
+import com.almende.timecontrol.eve.TimeManagerAgent;
 
 /**
  * {@link CapabilityTest}
@@ -56,6 +64,8 @@ public class CapabilityTest
 
 	/** */
 	private static final Logger LOG = LogUtil.getLogger(CapabilityTest.class);
+
+	private static final String DO_SIM_COMPLETE = "doSimComplete";
 
 	@Test
 	public void testTimeControl() throws Exception
@@ -100,8 +110,14 @@ public class CapabilityTest
 
 		final String[] actorNames = { "actor1", "actor2", "actor3" };
 
-		final CountDownLatch latch = new CountDownLatch(actorNames.length);
+		final CountDownLatch allReady = new CountDownLatch(actorNames.length);
 
+		final CountDownLatch simCompleted = new CountDownLatch(1);
+
+		final CountDownLatch allCompleted = new CountDownLatch(
+				actorNames.length);
+
+		final Set<AgentID> ready = new HashSet<>();
 		final Set<AgentID> failed = new HashSet<>();
 		for (String actorName : actorNames)
 		{
@@ -113,27 +129,33 @@ public class CapabilityTest
 						@Override
 						public void onNext(final AgentStatusUpdate update)
 						{
-							LOG.trace(myName + " observed: " + update);
-							// System.err.println("Observed: " + update);
+							LOG.trace(myName + " ==> " + update.getStatus());
 
-							if (update.getStatus().isFailedStatus())
+							if (update.getStatus().isPassiveStatus())
+							{
+								ready.add(update.getAgentID());
+								allReady.countDown();
+								LOG.trace(myName + " activated, remaining: "
+										+ allCompleted.getCount());
+							} else if (update.getStatus().isFailedStatus())
 							{
 								failed.add(update.getAgentID());
-								latch.countDown();
-								LOG.trace("Agent failed, remaining: "
-										+ latch.getCount());
+								allCompleted.countDown();
+								LOG.trace(myName + " failed, remaining: "
+										+ allCompleted.getCount());
 							} else if (update.getStatus().isFinishedStatus())
 							{
-								latch.countDown();
-								LOG.trace("Agent finished, remaining: "
-										+ latch.getCount());
+								allCompleted.countDown();
+								LOG.trace(myName + " finished, remaining: "
+										+ allCompleted.getCount());
 							}
 						}
 
 						@Override
 						public void onError(final Throwable e)
 						{
-							LOG.error("Problem while observing agent status", e);
+							LOG.error("Problem while observing status of "
+									+ myName, e);
 						}
 
 						@Override
@@ -144,9 +166,66 @@ public class CapabilityTest
 					});
 		}
 
-		latch.await();// 5, TimeUnit.SECONDS);
+		allReady.await(5, TimeUnit.SECONDS);
+		assertTrue(
+				"Agent(s) ready: " + ready + ", pending: "
+						+ allReady.getCount(), allReady.getCount() == 0);
+
+		final ModelComponent<AgentID> actor = new ModelComponent<AgentID>()
+		{
+			/** */
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public AgentID getID()
+			{
+				return binder.getID();
+			}
+
+			@Override
+			public int compareTo(final Identifiable<AgentID> o)
+			{
+				return getID().compareTo(o.getID());
+			}
+
+			@Override
+			public AgentID getOwnerID()
+			{
+				return binder.getID();
+			}
+
+			@Override
+			public Instant<?> getTime()
+			{
+				return binder.inject(ReplicatingCapability.class).getTime();
+			}
+
+			@Schedulable(DO_SIM_COMPLETE)
+			public void doSimulationComplete()
+			{
+				LOG.trace("Simulation complete");
+				simCompleted.countDown();
+			}
+		};
+		final ReplicationConfig cfg = binder.inject(ReplicationConfig.class);
+		final ReplicatingCapability sim = binder
+				.inject(ReplicatingCapability.class);
+		final SimTime endTime = cfg.newTime().create(
+				cfg.getInterval().toDurationMillis(),
+				io.coala.time.TimeUnit.MILLIS);
+		sim.schedule(ProcedureCall.create(actor, actor, DO_SIM_COMPLETE),
+				Trigger.createAbsolute(endTime));
+
+		LOG.trace("All agent(s) activated, now starting replication...");
+		sim.start();
+
+		simCompleted.await(5, TimeUnit.SECONDS);
+		assertTrue("Simulation incomplete", simCompleted.getCount() == 0);
+
+		allCompleted.await(1, TimeUnit.SECONDS);
 		assertTrue("Agent(s) failed: " + failed, failed.isEmpty());
-		assertTrue("Agent(s) still waiting to finish", latch.getCount() == 0);
+		assertTrue("Agent(s) interrupted: " + allCompleted.getCount(),
+				allCompleted.getCount() == 0);
 		LOG.trace(TimeControlCapabilityImpl.class.getSimpleName()
 				+ " test done!");
 	}
