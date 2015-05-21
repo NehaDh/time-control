@@ -39,6 +39,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
@@ -63,6 +64,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -360,7 +362,20 @@ public class DynaBean implements Cloneable
 
 				if (Config.class.isAssignableFrom(resultType))
 				{
-					final Properties entries = jp.readValueAs(Properties.class);
+					final Map<String, Object> entries = jp
+							.readValueAs(new TypeReference<Map<String, Object>>()
+							{
+							});
+
+					final Iterator<Entry<String, Object>> it = entries
+							.entrySet().iterator();
+					for (Entry<String, Object> next = null; it.hasNext(); next = it
+							.next())
+						if (next != null && next.getValue() == null)
+						{
+							LOG.trace("Ignoring null value: {}", next);
+							it.remove();
+						}
 					return resultType.cast(ConfigFactory.create(
 							resultType.asSubclass(Config.class), entries));
 				}
