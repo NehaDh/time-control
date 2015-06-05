@@ -20,11 +20,10 @@
  */
 package com.almende.timecontrol.entity;
 
-import io.coala.json.dynabean.DynaBean;
-import io.coala.json.dynabean.DynaBean.BeanWrapper;
+import io.coala.json.DynaBean;
+import io.coala.json.DynaBean.BeanWrapper;
 import io.coala.util.JsonUtil;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -52,6 +51,7 @@ public interface TriggerStatus // extends Accessible
 	/** the callback {@link URI}s for the listeners of the {@link #config()} */
 	// List<URI> subscribers();
 
+	/** @return the jobs */
 	List<TriggerEvent> jobs();
 
 	/**

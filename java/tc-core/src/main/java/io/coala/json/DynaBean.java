@@ -18,38 +18,43 @@
  * 
  * Copyright (c) 2014 Almende B.V. 
  */
-package io.coala.json.dynabean;
+package io.coala.json;
 
 import io.coala.error.ExceptionBuilder;
-import io.coala.id.Identifier;
 import io.coala.util.JsonUtil;
 import io.coala.util.LogUtil;
+import io.coala.util.TypeUtil;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.WeakHashMap;
 
 import javax.inject.Provider;
 
 import org.aeonbits.owner.Accessible;
 import org.aeonbits.owner.Config;
 import org.aeonbits.owner.ConfigFactory;
+import org.aeonbits.owner.Mutable;
 import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -84,8 +89,27 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 public class DynaBean implements Cloneable
 {
 
+	/**
+	 * Tag annotation used to recognize {@link DynaBean} entities during
+	 * de/serialization and specify the property to use for {@link Comparable}s
+	 * 
+	 * @date $Date$
+	 * @version $Id$
+	 * @author <a href="mailto:rick@almende.org">Rick</a>
+	 */
+	@Documented
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.TYPE)
+	public @interface BeanWrapper
+	{
+		/**
+		 * @return
+		 */
+		String comparableOn() default "";
+	}
+
 	/** */
-	static final Logger LOG = LogUtil.getLogger(DynaBean.class);
+	private static final Logger LOG = LogUtil.getLogger(DynaBean.class);
 
 	/** leave null as long as possible */
 	@JsonIgnore
@@ -108,6 +132,9 @@ public class DynaBean implements Cloneable
 					.unmodifiableMap(this.dynamicProperties);
 	}
 
+	/**
+	 * @return the map of property values
+	 */
 	@JsonAnyGetter
 	protected Map<String, Object> any()
 	{
@@ -225,32 +252,276 @@ public class DynaBean implements Cloneable
 		}
 	}
 
+	/** cache of type arguments for known {@link Identifier} sub-types */
+	// static final Map<Class<?>, Provider<?>> DYNABEAN_PROVIDER_CACHE = new
+	// WeakHashMap<>();
+
 	/**
-	 * @param type
-	 * @return
+	 * {@link ProxyProvider}
+	 * 
+	 * @date $Date$
+	 * @version $Id$
+	 * @author <a href="mailto:Rick@almende.org">Rick</a>
+	 *
+	 * @param <T>
 	 */
-	public static <T> T valueOf(final Class<T> type,
-			final Properties... imports)
+	static class ProxyProvider<T> implements Provider<T>
 	{
-		return valueOf(type, new DynaBean());
+
+		/** */
+		private final ObjectMapper om;
+
+		/** */
+		private final DynaBean bean;
+
+		/** */
+		private final Properties[] imports;
+
+		/**
+		 * {@link ProxyProvider} constructor
+		 * 
+		 * @param type
+		 */
+		public ProxyProvider(final ObjectMapper om, final DynaBean bean,
+				final Properties... imports)
+		{
+			this.om = om;
+			this.bean = bean;
+			this.imports = imports;
+		}
+
+		/** cache of type arguments for known {@link Builder} sub-types */
+		private static final Map<Class<?>, List<Class<?>>> BUILDER_TYPE_ARGUMENT_CACHE = new HashMap<>();
+
+		@Override
+		public T get()
+		{
+			try
+			{
+				@SuppressWarnings("unchecked")
+				final Class<T> type = (Class<T>) TypeUtil.getTypeArguments(
+						ProxyProvider.class, getClass(),
+						BUILDER_TYPE_ARGUMENT_CACHE).get(0);
+				return DynaBean.valueOf(om, type, this.bean, this.imports);
+			} catch (final Throwable t)
+			{
+				throw ExceptionBuilder.unchecked(
+						"Problem providing " + DynaBean.class.getSimpleName()
+								+ " proxy using: " + getClass().getName(), t)
+						.build();
+			}
+		}
 	}
 
 	/**
-	 * @param type
-	 * @return
+	 * @param beanType should be a non-abstract concrete {@link Class} that has
+	 *            a public zero-arg constructor
+	 * @return the new {@link Provider} instance
 	 */
-	@SuppressWarnings("unchecked")
-	public static <T> T valueOf(final Class<T> type, final DynaBean bean,
+	public static <T> Provider<T> createProvider(final ObjectMapper om,
+			final Class<T> beanType, final Properties... imports)
+	{
+		return new ProxyProvider<T>(om, new DynaBean(), imports);
+	}
+
+	/**
+	 * @param beanType should be a non-abstract concrete {@link Class} that has
+	 *            a public zero-arg constructor
+	 * @return the new {@link Provider} instance
+	 */
+	public static <T> Provider<T> getProvider(final ObjectMapper om,
+			final Class<T> beanType,
+			final Map<Class<?>, Provider<?>> providerCache,
 			final Properties... imports)
 	{
-		if (!type.isAnnotationPresent(BeanWrapper.class))
-			throw ExceptionBuilder.unchecked(
-					"Type is not a @" + BeanWrapper.class.getSimpleName())
-					.build();
+		if (providerCache == null)
+			return createProvider(om, beanType, imports);
 
-		return (T) Proxy.newProxyInstance(type.getClassLoader(),
-				new Class[] { type }, new DynaBeanInvocationHandler(type, bean,
-						imports));
+		synchronized (providerCache)
+		{
+			@SuppressWarnings("unchecked")
+			Provider<T> result = (Provider<T>) providerCache.get(beanType);
+			if (result == null)
+			{
+				result = createProvider(om, beanType, imports);
+				providerCache.put(beanType, result);
+			}
+			return result;
+		}
+	}
+
+	/**
+	 * {@link ProxyInvocationHandler}
+	 * 
+	 * @date $Date$
+	 * @version $Id$
+	 * @author <a href="mailto:rick@almende.org">Rick</a>
+	 */
+	static class ProxyInvocationHandler implements InvocationHandler
+	{
+		/** */
+		private static final Logger LOG = LogUtil
+				.getLogger(ProxyInvocationHandler.class);
+
+		/** */
+		private final Class<?> type;
+
+		/** */
+		private final Config config;
+
+		/** */
+		protected final DynaBean bean;
+
+		/**
+		 * {@link ProxyInvocationHandler} constructor
+		 */
+		public ProxyInvocationHandler(final ObjectMapper om,
+				final Class<?> type, final DynaBean bean,
+				final Properties... imports)
+		{
+			this.type = type;
+			this.bean = bean;
+			// LOG.trace("Using imports: " + Arrays.asList(imports));
+			Config config = null;
+			if (Config.class.isAssignableFrom(type))
+			{
+				// always create fresh, never from cache
+				config = ConfigFactory.create(type.asSubclass(Config.class),
+						imports);
+				if (Mutable.class.isAssignableFrom(type))
+				{
+					final Mutable mutable = (Mutable) config;
+					mutable.addPropertyChangeListener(new PropertyChangeListener()
+					{
+						@Override
+						public void propertyChange(
+								final PropertyChangeEvent change)
+						{
+							LOG.trace(type.getSimpleName()
+									+ " changed: {} = {} (was {})",
+									change.getPropertyName(),
+									change.getNewValue(), change.getOldValue());
+
+							// remove bean property in favor of changed
+							// default config
+							// bean.remove(change.getPropertyName());
+							
+							/* TODO parse actual value into bean
+							try
+							{
+								final Method method = type.getMethod(change
+										.getPropertyName());
+								final Object newValue = om.readValue(
+										change.getNewValue().toString(),
+										JsonUtil.checkRegistered(om,
+												method.getReturnType(), imports));
+								bean.set(change.getPropertyName(), newValue);
+							} catch (final Throwable t)
+							{
+								LOG.warn("Could not deserialize property: "
+										+ change.getPropertyName(), t);
+							}*/
+						}
+					});
+				}
+			}
+			this.config = config;
+
+			// TODO use event listeners of Mutable interface to dynamically add
+			// Converters at runtime
+		}
+
+		@SuppressWarnings("rawtypes")
+		@Override
+		public Object invoke(final Object proxy, final Method method,
+				final Object[] args) throws Throwable
+		{
+			// LOG.trace("Calling " + this.type.getSimpleName() + "#"
+			// + method.getName() + "()");
+
+			final String beanProp = method.getName();
+			switch (args == null ? 0 : args.length)
+			{
+			case 0:
+				if (beanProp.equals("toString"))
+				{
+					JsonUtil.checkRegistered(JsonUtil.getJOM(), this.type);
+					return this.bean.toString();
+				}
+
+				if (beanProp.equals("hashCode"))
+					return this.bean.hashCode();
+
+				// ! can't intercept call to native method
+				// if (method.getName().equals("getClass"))
+				// return this.type;
+
+				if (!method.getReturnType().equals(Void.TYPE))
+				{
+					Object result = this.bean.any().get(beanProp);
+					if (result == null)
+					{
+						if (this.config != null)
+						{
+							result = method.invoke(this.config, args);
+							// LOG.trace(
+							// "Property {}#{}() == {} [current Config]",
+							// this.type.getSimpleName(), beanProp, result);
+						}
+						// else
+						// LOG.trace("Property {}#{}() == null [no config]",
+						// this.type.getSimpleName(), beanProp);
+					}
+					return result;
+				}
+				break;
+
+			case 1:
+				if (beanProp.equals("equals"))
+					return this.bean.equals(args[0]);
+
+				final DynaBean.BeanWrapper comparable = this.type
+						.getAnnotation(DynaBean.BeanWrapper.class);
+				if (beanProp.equals("compareTo") && comparable != null)
+					return DynaBean.getComparator(comparable).compare(
+							(Comparable) this.bean, (Comparable) args[0]);
+
+				if (method.getReturnType().equals(Void.TYPE)
+						&& method.getName().startsWith("set")
+						&& method.getParameterTypes().length == 1
+						&& method.getParameterTypes()[0]
+								.isAssignableFrom(args[0].getClass()))
+				{
+					this.bean.set(beanProp, args[0]);
+					return null; // setters return void
+				}
+				break;
+			}
+
+			if (this.config != null)
+			{
+				// LOG.trace("Passing call to Config");
+				return method.invoke(this.config, args);
+			}
+
+			if (method.getReturnType().equals(Void.TYPE))
+			{
+				LOG.warn("Ignoring call to: void {}#{}({})",
+						this.type.getSimpleName(), beanProp,
+						Arrays.asList(args));
+				return null;
+			}
+
+			throw ExceptionBuilder
+					.unchecked(
+							DynaBean.class.getSimpleName()
+									+ " ("
+									+ (method.getReturnType().isPrimitive() ? "primitive"
+											: "complex") + ") value not set: "
+									+ this.type.getSimpleName() + "#"
+									+ beanProp + "(" + Arrays.asList(args)
+									+ ")").build();
+		}
 	}
 
 	/**
@@ -259,7 +530,7 @@ public class DynaBean implements Cloneable
 	 * @param <T>
 	 * @return
 	 */
-	public static final <S, T> JsonSerializer<T> createJsonSerializer(
+	static final <S, T> JsonSerializer<T> createJsonSerializer(
 			final Class<T> type)
 	{
 		return new JsonSerializer<T>()
@@ -278,13 +549,32 @@ public class DynaBean implements Cloneable
 				}
 
 				// BeanWrapper gets special treatment
-				if (DynaBeanInvocationHandler.class.isInstance(Proxy
+				if (ProxyInvocationHandler.class.isInstance(Proxy
 						.getInvocationHandler(value)))
 				{
-					final DynaBeanInvocationHandler handler = (DynaBeanInvocationHandler) Proxy
+					final ProxyInvocationHandler handler = (ProxyInvocationHandler) Proxy
 							.getInvocationHandler(value);
-					// LOG.trace("Finding serializer for " +
-					// handler.bean.getClass());
+
+					// Config (Accessible) gets special treatment
+					if (Accessible.class.isAssignableFrom(handler.type))
+					{
+						final Map<String, Object> copy = new HashMap<>(
+								handler.bean.any());
+						final Accessible config = (Accessible) handler.config;
+						for (String key : config.propertyNames())
+							copy.put(key, config.getProperty(key));
+						serializers.findValueSerializer(copy.getClass(), null)
+								.serialize(copy, jgen, serializers);
+						return;
+					} else if (Config.class.isAssignableFrom(handler.type))
+						throw new JsonGenerationException(
+								"BeanWrapper should extend "
+										+ Accessible.class.getName()
+										+ " required for serialization: "
+										+ Arrays.asList(handler.type
+												.getInterfaces()));
+
+					// BeanWrappers that do not extend OWNER API's Config
 					serializers.findValueSerializer(handler.bean.getClass(),
 							null).serialize(handler.bean, jgen, serializers);
 					return;
@@ -316,37 +606,13 @@ public class DynaBean implements Cloneable
 		};
 	}
 
-	/** */
-	public static <T> void registerType(final ObjectMapper om,
-			final Class<T> type, final Properties... imports)
-	{
-		// TODO implement dynamic generic Converter(s) for JSON bean
-		// properties ?
-
-		// if (Config.class.isAssignableFrom(type))
-		// {
-		// final Class<?> editorType = new
-		// JsonPropertyEditor<T>().getClass();
-		// PropertyEditorManager.registerEditor(type, editorType);
-		// LOG.trace("Registered " + editorType + " - "
-		// + PropertyEditorManager.findEditor(type));
-		// }
-
-		om.registerModule(new SimpleModule().addSerializer(type,
-				createJsonSerializer(type)).addDeserializer(type,
-				createJsonDeserializer(om, type, imports)));
-	}
-
-	/** cache of type arguments for known {@link Identifier} sub-types */
-	public static final Map<Class<?>, Provider<?>> DYNABEAN_PROVIDER_CACHE = new WeakHashMap<>();
-
 	/**
 	 * @param referenceType
 	 * @param <S>
 	 * @param <T>
 	 * @return
 	 */
-	public static final <S, T> JsonDeserializer<T> createJsonDeserializer(
+	static final <S, T> JsonDeserializer<T> createJsonDeserializer(
 			final ObjectMapper om, final Class<T> resultType,
 			final Properties... imports)
 	{
@@ -428,46 +694,30 @@ public class DynaBean implements Cloneable
 									+ " but parsed: "
 									+ tree.getClass().getSimpleName()).build();
 
-				return DynaBean.valueOf(resultType, bean, imports);
+				return DynaBean.valueOf(om, resultType, bean, imports);
 			}
 		};
 	}
 
-	/**
-	 * @param beanType should be a non-abstract concrete {@link Class} that has
-	 *            a public zero-arg constructor
-	 * @return the new {@link Provider} instance
-	 */
-	public static <T> Provider<T> createProvider(final Class<T> beanType,
-			final Map<Class<?>, Provider<?>> cache, final Properties... imports)
+	/** */
+	public static <T> void registerType(final ObjectMapper om,
+			final Class<T> type, final Properties... imports)
 	{
-		synchronized (cache)
-		{
-			@SuppressWarnings("unchecked")
-			Provider<T> result = (Provider<T>) cache.get(beanType);
-			if (result == null)
-			{
-				result = new DynaBeanProxyProvider<T>(new DynaBean(), imports);
-				cache.put(beanType, result);
-			}
-			return result;
-		}
-	}
+		// TODO implement dynamic generic Converter(s) for JSON bean
+		// properties ?
 
-	/**
-	 * @date $Date$
-	 * @version $Id$
-	 * @author <a href="mailto:rick@almende.org">Rick</a>
-	 */
-	@Documented
-	@Retention(RetentionPolicy.RUNTIME)
-	@Target(ElementType.TYPE)
-	public @interface BeanWrapper
-	{
-		/**
-		 * @return
-		 */
-		String comparableOn() default "";
+		// if (Config.class.isAssignableFrom(type))
+		// {
+		// final Class<?> editorType = new
+		// JsonPropertyEditor<T>().getClass();
+		// PropertyEditorManager.registerEditor(type, editorType);
+		// LOG.trace("Registered " + editorType + " - "
+		// + PropertyEditorManager.findEditor(type));
+		// }
+
+		om.registerModule(new SimpleModule().addSerializer(type,
+				createJsonSerializer(type)).addDeserializer(type,
+				createJsonDeserializer(om, type, imports)));
 	}
 
 	/** */
@@ -495,10 +745,10 @@ public class DynaBean implements Cloneable
 					@Override
 					public int compare(final S o1, final S o2)
 					{
-						final S key1 = (S) ((DynaBeanInvocationHandler) Proxy
+						final S key1 = (S) ((ProxyInvocationHandler) Proxy
 								.getInvocationHandler(o1)).bean.any().get(
 								annot.comparableOn());
-						final S key2 = (S) ((DynaBeanInvocationHandler) Proxy
+						final S key2 = (S) ((ProxyInvocationHandler) Proxy
 								.getInvocationHandler(o2)).bean.any().get(
 								annot.comparableOn());
 						return key1.compareTo(key2);
@@ -512,6 +762,34 @@ public class DynaBean implements Cloneable
 	}
 
 	/**
+	 * @param type
+	 * @return
+	 */
+	public static <T> T valueOf(final Class<T> type,
+			final Properties... imports)
+	{
+		return valueOf(JsonUtil.getJOM(), type, new DynaBean());
+	}
+
+	/**
+	 * @param type
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T valueOf(final ObjectMapper om, final Class<T> type,
+			final DynaBean bean, final Properties... imports)
+	{
+		if (!type.isAnnotationPresent(BeanWrapper.class))
+			throw ExceptionBuilder.unchecked(
+					"Type is not a @" + BeanWrapper.class.getSimpleName())
+					.build();
+
+		return (T) Proxy.newProxyInstance(type.getClassLoader(),
+				new Class[] { type }, new ProxyInvocationHandler(om, type,
+						bean, imports));
+	}
+
+	/**
 	 * {@link Builder}
 	 * 
 	 * @date $Date$
@@ -522,7 +800,7 @@ public class DynaBean implements Cloneable
 	 * @param <THIS> the builder type
 	 */
 	public static class Builder<T, THIS extends Builder<T, THIS>> extends
-			DynaBeanProxyProvider<T>
+			ProxyProvider<T>
 	{
 
 		/** */
@@ -534,16 +812,26 @@ public class DynaBean implements Cloneable
 		 */
 		protected Builder(final Properties... imports)
 		{
-			this(new DynaBean(), imports);
+			this(JsonUtil.getJOM(), new DynaBean(), imports);
 		}
 
 		/**
 		 * {@link Builder} constructor, to be extended by a public zero-arg
 		 * constructor in concrete sub-types
 		 */
-		protected Builder(final DynaBean bean, final Properties... imports)
+		protected Builder(final ObjectMapper om, final Properties... imports)
 		{
-			super(bean, imports);
+			this(om, new DynaBean(), imports);
+		}
+
+		/**
+		 * {@link Builder} constructor, to be extended by a public zero-arg
+		 * constructor in concrete sub-types
+		 */
+		protected Builder(final ObjectMapper om, final DynaBean bean,
+				final Properties... imports)
+		{
+			super(om, bean, imports);
 			this.bean = bean;
 		}
 

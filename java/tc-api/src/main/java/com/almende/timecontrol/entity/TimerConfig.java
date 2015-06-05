@@ -21,8 +21,8 @@
 package com.almende.timecontrol.entity;
 
 import io.coala.id.Identifier;
-import io.coala.json.dynabean.DynaBean;
-import io.coala.json.dynabean.DynaBean.BeanWrapper;
+import io.coala.json.DynaBean;
+import io.coala.json.DynaBean.BeanWrapper;
 import io.coala.util.JsonUtil;
 
 import java.util.Properties;
@@ -76,6 +76,10 @@ public interface TimerConfig extends Comparable<TimerConfig>, Accessible
 	/** the simulated duration */
 	@Key(TimeControl.DURATION_KEY)
 	Duration duration();
+
+	/** the simulated duration */
+	@Key(TimeControl.CLOCK_TYPE_KEY)
+	Class<?> clockType();
 
 	/**
 	 * @return the minimum wall-clock duration to wait (>0) before timing out
@@ -192,6 +196,12 @@ public interface TimerConfig extends Comparable<TimerConfig>, Accessible
 		public Builder withDuration(final Duration duration)
 		{
 			with(TimeControl.DURATION_KEY, duration);
+			return this;
+		}
+
+		public Builder withClockType(final Class<?> clockType)
+		{
+			with(TimeControl.CLOCK_TYPE_KEY, clockType);
 			return this;
 		}
 

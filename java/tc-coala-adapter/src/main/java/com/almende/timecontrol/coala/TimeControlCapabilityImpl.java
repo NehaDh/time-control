@@ -227,7 +227,8 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 			{
 				result = getBinder().inject(RandomNumberStream.Factory.class)
 						.create(streamID,
-								CoalaProperty.randomSeed.value().getLong());
+								CoalaProperty.randomSeed.value().getLong()
+										+ getID().getOwnerID().hashCode());
 				this.rngCache.put(streamID, result);
 			}
 			return result;
@@ -269,13 +270,13 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 
 	protected synchronized void setTime(final Duration time)
 	{
-		setTime(this.newTime.create(time.nanos(), TimeUnit.NANOS).toUnit(
-				this.baseTimeUnit));
+		setTime(time == null ? null : this.newTime.create(time.toNanosLong(),
+				TimeUnit.NANOS).toUnit(this.baseTimeUnit));
 	}
 
 	protected synchronized void setTime(final SimTime time)
 	{
-		if (time.isBefore(this.time))
+		if (time != null && this.time != null && time.isBefore(this.time))
 			throw CoalaExceptionFactory.VALUE_NOT_ALLOWED.createRuntime("time",
 					time, "can't rewind time, currently: " + this.time);
 		this.time = time;
@@ -334,9 +335,8 @@ public class TimeControlCapabilityImpl extends BasicCapability implements
 			setTime(job.time());
 			synchronized (PENDING_JOBS)
 			{
-				final Job<?> todo = job.isPatternCompleted() ? PENDING_JOBS
-						.remove(job.triggerId()) : PENDING_JOBS.get(job
-						.triggerId());
+				final Job<?> todo = job.lastCall() ? PENDING_JOBS.remove(job
+						.triggerId()) : PENDING_JOBS.get(job.triggerId());
 				if (todo == null)
 					LOG.warn("trigger no longer available: " + job.triggerId());
 				else if (!Callable.class.isAssignableFrom(todo.getClass()))

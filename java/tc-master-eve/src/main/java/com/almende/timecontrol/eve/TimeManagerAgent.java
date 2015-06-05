@@ -84,6 +84,8 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 	protected void loadConfig()
 	{
 		super.loadConfig();
+		setTimerConfig(TimerConfig.Builder.fromJSON(
+				getConfig().get(MASTER_CONFIG_KEY)).build());
 		this.events.onNext(AgentEventType.AGENT_INITIALIZED);
 	}
 
@@ -190,6 +192,9 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 			@Override
 			public void onNext(final ClockEvent clock)
 			{
+				// if (clock.time() == null)
+				// onError(new NullPointerException("No time in event: "
+				// + clock));
 				getObserverProxy(this.uri).notifyClock(callbackID, clock);
 			}
 		});
@@ -254,10 +259,13 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 					@Override
 					public void onNext(final TriggerEvent job)
 					{
+						LOG.trace("Callback for trigger {} pattern: {}",
+								callbackID, pattern);
 						getObserverProxy(this.uri).notifyTrigger(callbackID,
 								job);
 					}
 				});
+		LOG.trace("Registered trigger {} pattern: {}", callbackID, pattern);
 		return callbackID;
 	}
 
@@ -265,6 +273,14 @@ public class TimeManagerAgent extends Agent implements EveTimeManagerAPI
 
 	/** */
 	private static final Map<String, TimeManagerAgent> INSTANCES = new TreeMap<>();
+
+	/** */
+	public static TimeManagerAgent getInstance(final TimerConfig config)
+	{
+		final AgentConfig cfg = new AgentConfig(config.id().getValue());
+		cfg.setClassName(TimeManagerAgent.class.getName());
+		return getInstance(config, cfg);
+	}
 
 	/** */
 	public static TimeManagerAgent getInstance(final String timerID)

@@ -21,8 +21,8 @@
 package com.almende.timecontrol.entity;
 
 import io.coala.id.Identifier;
-import io.coala.json.dynabean.DynaBean;
-import io.coala.json.dynabean.DynaBean.BeanWrapper;
+import io.coala.json.DynaBean;
+import io.coala.json.DynaBean.BeanWrapper;
 import io.coala.util.JsonUtil;
 
 import java.util.Properties;

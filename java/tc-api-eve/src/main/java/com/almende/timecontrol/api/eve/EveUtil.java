@@ -44,6 +44,9 @@ import com.almende.eve.capabilities.Config;
 import com.almende.eve.config.YamlReader;
 import com.almende.eve.transport.http.embed.JettyLauncher;
 import com.almende.timecontrol.api.eve.EveTimeAgentAPI.AgentEventType;
+import com.almende.timecontrol.entity.ClockEvent;
+import com.almende.timecontrol.entity.TimerConfig;
+import com.almende.timecontrol.entity.TriggerEvent;
 import com.almende.util.jackson.JOM;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,11 +66,19 @@ public class EveUtil
 	/** */
 	private static final Logger LOG = LogUtil.getLogger(EveUtil.class);
 
+	/** */
+	private static final ObjectMapper om = JOM.getInstance();
+
+	static
+	{
+		// FIXME deprecate somehow
+		JsonUtil.checkRegistered(om, ClockEvent.class);
+		JsonUtil.checkRegistered(om, TriggerEvent.class);
+	}
+
 	public static void checkRegistered(final Class<?> type)
 	{
-		final ObjectMapper om = JOM.getInstance();
-		final Package tcEntities = com.almende.timecontrol.entity.TimerConfig.class
-				.getPackage();
+		final Package tcEntities = TimerConfig.class.getPackage();
 		// final Properties[] imports = null;
 		for (Method method : type.getMethods())
 		{

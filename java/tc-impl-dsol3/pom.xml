@@ -9,7 +9,11 @@
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>tc-impl</artifactId>
+	<artifactId>tc-impl-dsol3</artifactId>
+
+	<properties>
+		<dsol.version>3.00.02</dsol.version>
+	</properties>
 
 	<repositories>
 		<!-- Time-control public Maven repository -->
@@ -26,6 +30,11 @@
 				<updatePolicy>daily</updatePolicy>
 			</snapshots>
 		</repository>
+		<repository>
+			<name>DSOL Public Repository</name>
+			<id>dsol-public</id>
+			<url>http://www.simulation.tudelft.nl/maven</url>
+		</repository>
 	</repositories>
 
 	<dependencies>
@@ -33,6 +42,12 @@
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tc-api</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>dsol</groupId>
+			<artifactId>dsol-core</artifactId>
+			<version>${dsol.version}</version>
 		</dependency>
 
 		<dependency>

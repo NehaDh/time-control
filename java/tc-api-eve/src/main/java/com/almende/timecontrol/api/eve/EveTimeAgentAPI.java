@@ -96,7 +96,7 @@ public interface EveTimeAgentAPI extends AgentInterface
 	 */
 	class EventWrapper<T> implements Comparable<EventWrapper<T>>
 	{
-		private final SubscriptionID subID;
+		public final SubscriptionID subID;
 		private final T event;
 
 		private EventWrapper(final SubscriptionID subID, final T event)
@@ -117,7 +117,7 @@ public interface EveTimeAgentAPI extends AgentInterface
 		 */
 		public boolean fits(final SubscriptionID subID)
 		{
-			return this.subID.equals(subID);
+			return this.subID.getValue().equals(subID.getValue());
 		}
 
 		/**

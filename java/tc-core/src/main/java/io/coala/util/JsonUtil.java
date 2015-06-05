@@ -20,9 +20,9 @@
 package io.coala.util;
 
 import io.coala.error.ExceptionBuilder;
+import io.coala.json.DynaBean;
 import io.coala.json.JsonWrapper;
-import io.coala.json.dynabean.DynaBean;
-import io.coala.json.dynabean.DynaBean.BeanWrapper;
+import io.coala.json.DynaBean.BeanWrapper;
 
 import java.beans.PropertyEditorSupport;
 import java.io.InputStream;

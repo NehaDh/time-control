@@ -20,6 +20,10 @@
  */
 package com.almende.timecontrol;
 
+import javax.measure.quantity.Duration;
+import javax.measure.unit.SI;
+import javax.measure.unit.Unit;
+
 /**
  * {@link TimeControl} specifies common domain-specific JSON constants
  * 
@@ -29,6 +33,12 @@ package com.almende.timecontrol;
  */
 public interface TimeControl
 {
+
+	/** */
+	Unit<Duration> MILLIS = SI.MILLI(SI.SECOND);
+
+	/** */
+	Unit<Duration> NANOS = SI.NANO(SI.SECOND);
 
 	/** */
 	String ID_KEY = "id";
@@ -79,7 +89,7 @@ public interface TimeControl
 	String UPCOMING_JOBS_KEY = "upcomingJobs";
 
 	/** */
-	//String SUBSCRIBERS_KEY = "subscribers";
+	// String SUBSCRIBERS_KEY = "subscribers";
 	String JOBS_KEY = "jobs";
 
 	/** */
@@ -111,5 +121,8 @@ public interface TimeControl
 
 	/** */
 	String UNTIL_KEY = "until";
+
+	/** */
+	String CLOCK_TYPE_KEY = "clockType";
 
 }

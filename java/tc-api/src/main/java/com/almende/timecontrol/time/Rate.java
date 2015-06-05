@@ -29,9 +29,6 @@ import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Quantity;
 import javax.measure.unit.Unit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -56,7 +53,7 @@ public class Rate extends DecimalMeasure<Dimensionless>
 {
 
 	/** */
-	private static final Logger LOG = LogManager.getLogger(Rate.class);
+	// private static final Logger LOG = LogManager.getLogger(Rate.class);
 
 	/** */
 	private static final long serialVersionUID = 1L;
@@ -164,7 +161,7 @@ public class Rate extends DecimalMeasure<Dimensionless>
 	{
 		public JsonSerializer()
 		{
-			LOG.trace("Created " + getClass().getName());
+			// LOG.trace("Created " + getClass().getName());
 		}
 
 		@Override
@@ -182,7 +179,7 @@ public class Rate extends DecimalMeasure<Dimensionless>
 	{
 		public JsonDeserializer()
 		{
-			LOG.trace("Created " + getClass().getName());
+			// LOG.trace("Created " + getClass().getName());
 		}
 
 		@Override

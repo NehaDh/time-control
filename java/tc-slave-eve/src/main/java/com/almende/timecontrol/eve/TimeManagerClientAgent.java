@@ -326,6 +326,7 @@ public class TimeManagerClientAgent extends Agent implements
 	public void notifyTrigger(final SubscriptionID subscriptionID,
 			final TriggerEvent job)
 	{
+		LOG.trace("Notify trigger event: {} {}", subscriptionID, job);
 		this.triggerEvents.onNext(EventWrapper.of(subscriptionID, job));
 	}
 
@@ -357,6 +358,7 @@ public class TimeManagerClientAgent extends Agent implements
 			{
 				final SubscriptionID subID = getTimerProxy()
 						.registerTriggerCallback(clockId, pattern, null);
+				LOG.trace("Received trigger {} pattern: {}", subID, pattern);
 				cachedResult = this.triggerEvents
 						.filter(new Func1<EventWrapper<TriggerEvent>, Boolean>()
 						{
@@ -364,7 +366,10 @@ public class TimeManagerClientAgent extends Agent implements
 							public Boolean call(
 									final EventWrapper<TriggerEvent> wrapper)
 							{
-								return wrapper.fits(subID);
+								final boolean result = wrapper.fits(subID);
+								LOG.trace("Fits {} == {}: {}", wrapper.subID,
+										subID, result);
+								return result;
 							}
 						})
 						.map(new Func1<EventWrapper<TriggerEvent>, TriggerEvent>()
@@ -373,16 +378,24 @@ public class TimeManagerClientAgent extends Agent implements
 							public TriggerEvent call(
 									final EventWrapper<TriggerEvent> wrapper)
 							{
-								return wrapper.unwrap();
+								final TriggerEvent result = wrapper.unwrap();
+								LOG.trace("Unwrapped event: {}", result);
+								return result;
 							}
 						}).takeWhile(new Func1<TriggerEvent, Boolean>()
 						{
 							@Override
 							public Boolean call(final TriggerEvent event)
 							{
-								return !event.isPatternCompleted();
+								final boolean result = !event
+										.lastCall();
+								LOG.trace("notLast: {}", result);
+								return result;
 							}
-						}).takeUntil(observeClock(clockId).takeLast(1));
+						});// TODO
+							// .takeUntil(observeClock(clockId).takeLast(1));
+
+				/* TODO
 				cachedResult.finallyDo(new Action0()
 				{
 					@Override
@@ -390,7 +403,7 @@ public class TimeManagerClientAgent extends Agent implements
 					{
 						cleanTriggerObservableCache(clockId, pattern);
 					}
-				});
+				});*/
 				observables.put(pattern, cachedResult);
 			}
 			return cachedResult;

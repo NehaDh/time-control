@@ -20,7 +20,7 @@
  */
 package io.coala.error;
 
-import io.coala.json.dynabean.DynaBean;
+import io.coala.json.DynaBean;
 
 import java.util.Map;
 

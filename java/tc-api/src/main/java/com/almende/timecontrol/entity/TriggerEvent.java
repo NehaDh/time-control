@@ -21,16 +21,18 @@
 package com.almende.timecontrol.entity;
 
 import io.coala.id.Identifier;
-import io.coala.json.dynabean.DynaBean;
-import io.coala.json.dynabean.DynaBean.BeanWrapper;
+import io.coala.json.DynaBean;
+import io.coala.json.DynaBean.BeanWrapper;
 import io.coala.util.JsonUtil;
 
 import java.util.Properties;
 
+import org.aeonbits.owner.Config.Key;
 import org.joda.time.Instant;
 
 import com.almende.timecontrol.TimeControl;
 import com.almende.timecontrol.time.Duration;
+import com.eaio.uuid.UUID;
 import com.fasterxml.jackson.core.TreeNode;
 
 /**
@@ -55,7 +57,7 @@ public interface TriggerEvent extends Comparable<TriggerEvent>
 
 	/**
 	 * the simulated time {@link Instant} when this {@link TriggerEvent} occurs,
-	 * or {@code null} if {@link #isPatternCompleted}
+	 * or {@code null} if {@link #lastCall}
 	 */
 	Duration time();
 
@@ -63,7 +65,8 @@ public interface TriggerEvent extends Comparable<TriggerEvent>
 	 * @return {@code true} iff this is the last {@link TriggerEvent} created by
 	 *         its {@link TriggerConfig}, {@code false} otherwise
 	 */
-	boolean isPatternCompleted();
+	@Key(TimeControl.LAST_CALL_KEY)
+	boolean lastCall();
 
 	/**
 	 * {@link ID}
@@ -72,12 +75,22 @@ public interface TriggerEvent extends Comparable<TriggerEvent>
 	 * @version $Id$
 	 * @author <a href="mailto:rick@almende.org">Rick</a>
 	 */
-	class ID extends Identifier<String>
+	class ID extends Identifier<UUID>
 	{
 		/** @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD */
 		public static ID valueOf(final String value)
 		{
 			return Identifier.valueOf(value, ID.class);
+		}
+
+		public static ID create()
+		{
+			return new ID()
+			{
+				{
+					setValue(new UUID());
+				}
+			};
 		}
 	}
 
@@ -126,6 +139,17 @@ public interface TriggerEvent extends Comparable<TriggerEvent>
 				final Properties... imports)
 		{
 			return new Builder(imports).withId(ID.valueOf(id));
+		}
+
+		/**
+		 * @param id the JSON-formatted identifier value
+		 * @param imports optional property defaults
+		 * @return the new {@link Builder}
+		 */
+		public static Builder fromTime(final Duration time,
+				final Properties... imports)
+		{
+			return new Builder(imports).withId(ID.create()).withTime(time);
 		}
 
 		/**

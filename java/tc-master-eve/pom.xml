@@ -55,7 +55,7 @@
 
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>tc-impl</artifactId>
+			<artifactId>tc-impl-dsol3</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 

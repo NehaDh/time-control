@@ -27,17 +27,16 @@ import javax.measure.DecimalMeasure;
 import javax.measure.Measurable;
 import javax.measure.Measure;
 import javax.measure.quantity.Duration;
-import javax.measure.quantity.Quantity;
 import javax.measure.unit.SI;
 import javax.measure.unit.Unit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.joda.time.Period;
 import org.joda.time.ReadableDuration;
+import org.jscience.physics.amount.Amount;
 import org.threeten.bp.temporal.ChronoUnit;
 import org.threeten.bp.temporal.TemporalAmount;
 
+import com.almende.timecontrol.TimeControl;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -52,6 +51,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  * <p>
  * Assumes {@linkplain Double#NaN} as value for illegal/empty value types
  * 
+ * TODO consider using more complex JScience {@link Amount} as super type rather
+ * than {@link DecimalMeasure}, providing more (exact) operations by default,
+ * e.g. {@link Amount#plus(Amount)}, a la <a
+ * href="https://www.jcp.org/en/jsr/detail?id=363">JSR 363</a> (see <a
+ * href="https://github.com/unitsofmeasurement/uom-se">Java8 reference
+ * implementation</a>)
+ * 
  * @date $Date$
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
@@ -65,10 +71,15 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	private static final long serialVersionUID = 1L;
 
 	/** */
-	private static final Logger LOG = LogManager.getLogger(TimeSpan.class);
+	// private static final Logger LOG = LogManager.getLogger(TimeSpan.class);
 
 	/**
-	 * Examples:
+	 * Parse duration as {@link DecimalMeasure JSR-275} measure (e.g.
+	 * {@code "123 ms"}) or as ISO Period with
+	 * {@link org.threeten.bp.Duration#parse(CharSequence) JSR-310} or
+	 * {@link Period#parse(String) Joda}.
+	 * 
+	 * Examples of ISO period:
 	 * 
 	 * <pre>
 	 *    "PT20.345S" -> parses as "20.345 seconds"
@@ -91,39 +102,49 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	public static final Measure<BigDecimal, Duration> parsePeriodOrMeasure(
 			final String measure)
 	{
+		if (measure == null)
+			throw new NullPointerException();
+		DecimalMeasure<Duration> result;
 		try
 		{
-			// final long millis = Period.parse(measure).getMillis();
-			// return DecimalMeasure.valueOf(BigDecimal.valueOf(millis),
-			// SI.MILLI(SI.SECOND));
-			final org.threeten.bp.Duration temp = org.threeten.bp.Duration
-					.parse(measure);
-			final DecimalMeasure<Duration> result = temp.getNano() == 0 ? DecimalMeasure
-					.valueOf(BigDecimal.valueOf(temp.getSeconds()), SI.SECOND)
-					: DecimalMeasure.valueOf(
-							BigDecimal.valueOf(temp.getSeconds())
-									.multiply(BigDecimal.TEN.pow(9))
-									.add(BigDecimal.valueOf(temp.getNano())),
-							SI.NANO(SI.SECOND));
-			LOG.trace("Parsed '{}' using JSR-310 to JSR-275 measure/unit: {}",
-					measure, result);
+			result = DecimalMeasure.valueOf(measure);
+			// LOG.trace("Parsed '{}' as JSR-275 measure/unit: {}", measure,
+			// result);
 			return result;
-		} catch (final Exception e)
+		} catch (final Exception a)
 		{
-			LOG.trace("JSR-310 failed", e);
+			// LOG.trace("JSR-275 failed, try JSR-310", e);
 			try
 			{
-				final Period joda = Period.parse(measure);
-				final DecimalMeasure<Duration> result = DecimalMeasure.valueOf(
-						BigDecimal.valueOf(joda.toStandardDuration()
-								.getMillis()), SI.MILLI(SI.SECOND));
-				LOG.trace("Parsed '{}' using Joda to JSR-275 measure/unit: {}",
-						measure, result);
+				// final long millis = Period.parse(measure).getMillis();
+				// return DecimalMeasure.valueOf(BigDecimal.valueOf(millis),
+				// SI.MILLI(SI.SECOND));
+				final org.threeten.bp.Duration temp = org.threeten.bp.Duration
+						.parse(measure);
+				result = temp.getNano() == 0 ? DecimalMeasure.valueOf(
+						BigDecimal.valueOf(temp.getSeconds()), SI.SECOND)
+						: DecimalMeasure
+								.valueOf(
+										BigDecimal
+												.valueOf(temp.getSeconds())
+												.multiply(BigDecimal.TEN.pow(9))
+												.add(BigDecimal.valueOf(temp
+														.getNano())),
+										TimeControl.NANOS);
+				// LOG.trace(
+				// "Parsed '{}' using JSR-310 to JSR-275 measure/unit: {}",
+				// measure, result);
 				return result;
-			} catch (final Exception e1)
+			} catch (final Exception e)
 			{
-				LOG.trace("Joda failed", e1);
-				return DecimalMeasure.valueOf(measure);
+				// LOG.trace("JSR-275 and JSR-310 failed, try Joda", e);
+				final Period joda = Period.parse(measure);
+				result = DecimalMeasure.valueOf(BigDecimal.valueOf(joda
+						.toStandardDuration().getMillis()), TimeControl.MILLIS);
+				// LOG.trace(
+				// "Parsed '{}' using Joda to JSR-275 measure/unit: {}",
+				// measure, result);
+				return result;
 			}
 		}
 	}
@@ -131,8 +152,6 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	/**
 	 * {@link TimeSpan} constructor for "natural" polymorphic Jackson bean
 	 * deserialization
-	 * 
-	 * TODO allow ISO Period formats
 	 * 
 	 * @see com.fasterxml.jackson.databind.deser.BeanDeserializer
 	 */
@@ -149,7 +168,7 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	 */
 	public TimeSpan(final double millis)
 	{
-		this(BigDecimal.valueOf(millis), SI.MILLI(SI.SECOND));
+		this(millis, TimeControl.MILLIS);
 	}
 
 	/**
@@ -160,7 +179,7 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	 */
 	public TimeSpan(final int millis)
 	{
-		this(BigDecimal.valueOf(millis), SI.MILLI(SI.SECOND));
+		this(millis, TimeControl.MILLIS);
 	}
 
 	/**
@@ -169,9 +188,9 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	 * @param measure
 	 * @param unit
 	 */
-	public TimeSpan(final Measure<BigDecimal, ?> measure)
+	public TimeSpan(final Measure<? extends Number, Duration> measure)
 	{
-		this(measure.getValue(), measure.getUnit().asType(Duration.class));
+		this(measure.getValue(), measure.getUnit());
 	}
 
 	/**
@@ -180,9 +199,10 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	 * @param value
 	 * @param unit
 	 */
-	public TimeSpan(final BigDecimal value, final Unit<Duration> unit)
+	public TimeSpan(final Number value, final Unit<Duration> unit)
 	{
-		super(value, unit);
+		super(value instanceof BigDecimal ? (BigDecimal) value : BigDecimal
+				.valueOf(value.doubleValue()), unit);
 	}
 
 	/**
@@ -206,7 +226,7 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	{
 		return new TimeSpan(BigDecimal.valueOf(temporal.get(ChronoUnit.NANOS))
 				.add(BigDecimal.valueOf(temporal.get(ChronoUnit.MILLIS))
-						.multiply(BigDecimal.TEN.pow(6))), SI.NANO(SI.SECOND));
+						.multiply(BigDecimal.TEN.pow(6))), TimeControl.NANOS);
 	}
 
 	/**
@@ -217,37 +237,68 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	public static TimeSpan valueOf(final ReadableDuration value)
 	{
 		return new TimeSpan(BigDecimal.valueOf(value.getMillis()),
-				SI.MILLI(SI.SECOND));
+				TimeControl.MILLIS);
 	}
 
 	/**
 	 * {@link TimeSpan} static factory method
 	 * 
-	 * @param measure
+	 * @param value
 	 */
-	public static <V extends Number, Q extends Quantity> TimeSpan valueOf(
-			final Measure<V, Q> measure)
+	public static TimeSpan valueOf(
+			final Measure<? extends Number, Duration> value)
 	{
-		return new TimeSpan(
-				BigDecimal.valueOf(measure.getValue().doubleValue()), measure
-						.getUnit().asType(Duration.class));
+		return new TimeSpan(value);
 	}
 
 	/**
-	 * for "natural" Config value conversion
+	 * {@link TimeSpan} static factory method
+	 * 
+	 * @param value
+	 */
+	public static TimeSpan valueOf(final Amount<Duration> value)
+	{
+		return new TimeSpan(BigDecimal.valueOf(value.getEstimatedValue()),
+				value.getUnit());
+	}
+
+	/**
+	 * for "natural" Config value conversion for a {@link Duration} (i.e.
+	 * {@link TimeSpan}).
+	 * 
+	 * @param value a duration as {@link DecimalMeasure JSR-275} measure (e.g.
+	 *            {@code "123 ms"}) or as ISO Period, parsed with
+	 *            {@link org.threeten.bp.Duration#parse(CharSequence) JSR-310}
+	 *            or {@link Period#parse(String) Joda}.
+	 * 
+	 *            Examples of ISO period:
+	 * 
+	 *            <pre>
+	 *    "PT20.345S" -> parses as "20.345 seconds"
+	 *    "PT15M"     -> parses as "15 minutes" (where a minute is 60 seconds)
+	 *    "PT10H"     -> parses as "10 hours" (where an hour is 3600 seconds)
+	 *    "P2D"       -> parses as "2 days" (where a day is 24 hours or 86400 seconds)
+	 *    "P2DT3H4M"  -> parses as "2 days, 3 hours and 4 minutes"
+	 *    "P-6H3M"    -> parses as "-6 hours and +3 minutes"
+	 *    "-P6H3M"    -> parses as "-6 hours and -3 minutes"
+	 *    "-P-6H+3M"  -> parses as "+6 hours and -3 minutes"
+	 * </pre>
 	 * 
 	 * @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD
+	 * @see org.threeten.bp.Duration#parse(String)
+	 * @see org.joda.time.format.ISOPeriodFormat#standard()
+	 * @see DecimalMeasure
 	 */
-	public static TimeSpan valueOf(final String measure)
+	public static TimeSpan valueOf(final String value)
 	{
-		return new TimeSpan(measure);
+		return new TimeSpan(value);
 	}
 
 	/**
 	 */
-	public static TimeSpan valueOf(final Number measure)
+	public static TimeSpan valueOf(final Number millis)
 	{
-		return new TimeSpan(measure.doubleValue());
+		return new TimeSpan(millis.doubleValue());
 	}
 
 	public static class JsonSerializer extends
@@ -255,7 +306,7 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	{
 		public JsonSerializer()
 		{
-			LOG.trace("Created " + getClass().getName());
+			// LOG.trace("Created " + getClass().getName());
 		}
 
 		@Override
@@ -263,8 +314,11 @@ public class TimeSpan extends DecimalMeasure<Duration>
 				final SerializerProvider serializers) throws IOException,
 				JsonProcessingException
 		{
-			// LOG.trace("Serializing " + value);
-			gen.writeString(value.toString());
+			final String result = value.toString();
+			// if (value.getUnit().getClass() == ProductUnit.class)
+			// LOG.trace("Serialized {} {} to: {}", value.getUnit().getClass()
+			// .getSimpleName(), value, result, new RuntimeException());
+			gen.writeString(result);
 		}
 	}
 
@@ -273,7 +327,7 @@ public class TimeSpan extends DecimalMeasure<Duration>
 	{
 		public JsonDeserializer()
 		{
-			LOG.trace("Created " + getClass().getName());
+			// LOG.trace("Created " + getClass().getName());
 		}
 
 		@Override
@@ -281,9 +335,12 @@ public class TimeSpan extends DecimalMeasure<Duration>
 				final DeserializationContext ctxt) throws IOException,
 				JsonProcessingException
 		{
-			// LOG.trace("Deserializing " + p.getText());
-			return p.getCurrentToken().isNumeric() ? TimeSpan.valueOf(p
-					.getNumberValue()) : TimeSpan.valueOf(p.getText());
+			final TimeSpan result = p.getCurrentToken().isNumeric() ? TimeSpan
+					.valueOf(p.getNumberValue()) : TimeSpan
+					.valueOf(p.getText());
+			// LOG.trace("Deserialized {} {} to: {}", p.getCurrentToken(),
+			// p.getText(), result);
+			return result;
 		}
 	}
 

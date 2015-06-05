@@ -69,6 +69,18 @@ public abstract class Identifier<T extends Comparable<T>> implements
 	{
 		return this.value;
 	}
+	
+	@Override
+	public int hashCode()
+	{
+		return getValue().hashCode();
+	}
+	
+	@Override
+	public boolean equals(final Object that)
+	{
+		return getValue()==null?that==null:getValue().equals(that);
+	}
 
 	@Override
 	public String toString()

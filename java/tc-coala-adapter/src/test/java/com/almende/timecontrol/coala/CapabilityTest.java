@@ -45,11 +45,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import rx.Observer;
 
+import com.almende.timecontrol.entity.ClockConfig;
+import com.almende.timecontrol.entity.TimerConfig;
 import com.almende.timecontrol.eve.TimeManagerAgent;
+import com.almende.timecontrol.rx.RxClock;
+import com.almende.timecontrol.time.Duration;
+import com.almende.timecontrol.time.Rate;
 
 /**
  * {@link CapabilityTest}
@@ -74,7 +80,18 @@ public class CapabilityTest
 				+ " test...");
 
 		final String modelname = "testModel" + System.currentTimeMillis();
-		final TimeManagerAgent timer = TimeManagerAgent.getInstance(modelname);
+		
+		final ClockConfig clock = ClockConfig.Builder.forID("_root_")
+				.withDrag(Rate.valueOf(100)).build();
+		final TimerConfig config = TimerConfig.Builder
+				.forID(modelname)
+				.withDuration(Duration.valueOf("P200D"))
+				.withOffset(
+						com.almende.timecontrol.time.Instant.valueOf(DateTime
+								.now().withTimeAtStartOfDay()))
+				.withResolution(Duration.valueOf("PT1H")).withClock(clock)
+				.withClockType(RxClock.class).build();
+		final TimeManagerAgent timer = TimeManagerAgent.getInstance(config);
 		LOG.trace("Started timer at urls: " + timer.getUrls());
 
 		final Binder binder = BinderFactory.Builder
@@ -219,7 +236,7 @@ public class CapabilityTest
 		LOG.trace("All agent(s) activated, now starting replication...");
 		sim.start();
 
-		simCompleted.await(5, TimeUnit.SECONDS);
+		simCompleted.await();// (5, TimeUnit.SECONDS);
 		assertTrue("Simulation incomplete", simCompleted.getCount() == 0);
 
 		allCompleted.await(1, TimeUnit.SECONDS);

@@ -20,15 +20,21 @@
  */
 package com.almende.timecontrol.time;
 
+import io.coala.error.ExceptionBuilder;
 import io.coala.json.JsonWrapper;
-import io.coala.util.JsonUtil;
 
+import javax.measure.DecimalMeasure;
 import javax.measure.Measurable;
+import javax.measure.Measure;
 import javax.measure.unit.SI;
+import javax.measure.unit.Unit;
 
+import org.joda.time.Period;
 import org.joda.time.ReadableDuration;
+import org.jscience.physics.amount.Amount;
 import org.threeten.bp.temporal.TemporalAmount;
 
+import com.almende.timecontrol.TimeControl;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
@@ -86,9 +92,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public class Duration implements JsonWrapper<TimeSpan>
+public class Duration implements JsonWrapper<TimeSpan>, Comparable<Duration>
 {
 
+	/** */
+	public static final Duration ZERO = Duration.valueOf("0 ms");
+
+	/** */
 	private TimeSpan value;
 
 	@Override
@@ -115,23 +125,52 @@ public class Duration implements JsonWrapper<TimeSpan>
 		return getValue().hashCode();
 	}
 
-	@JsonIgnore
-	public long millis()
+	@Override
+	public int compareTo(final Duration that)
 	{
-		return getValue().longValue(SI.MILLI(SI.SECOND));
+		return getValue().compareTo(that.getValue());
+	}
+
+	/**
+	 * @param unit
+	 * @return
+	 */
+	public Duration to(final Unit<javax.measure.quantity.Duration> unit)
+	{
+		return valueOf(getValue().to(unit));
 	}
 
 	@JsonIgnore
-	public long nanos()
+	public long longValue(final Unit<javax.measure.quantity.Duration> unit)
 	{
-		return getValue().longValue(SI.NANO(SI.SECOND));
+		try
+		{
+			return getValue().longValue(unit);
+		} catch (final Throwable t)
+		{
+			throw ExceptionBuilder.unchecked(
+					"Could not convert " + getValue().getUnit().getClass()
+							+ " to " + unit, t).build();
+		}
+	}
+
+	@JsonIgnore
+	public long toMillisLong()
+	{
+		return longValue(TimeControl.MILLIS);
+	}
+
+	@JsonIgnore
+	public long toNanosLong()
+	{
+		return longValue(TimeControl.NANOS);
 	}
 
 	/** @return the Joda {@link ReadableDuration} implementation of a time span */
 	@JsonIgnore
 	public ReadableDuration toJoda()
 	{
-		return org.joda.time.Duration.millis(millis());
+		return org.joda.time.Duration.millis(toMillisLong());
 	}
 
 	/**
@@ -143,7 +182,14 @@ public class Duration implements JsonWrapper<TimeSpan>
 	@JsonIgnore
 	public <T extends TemporalAmount & Comparable<T>> T toJava8()
 	{
-		return (T) org.threeten.bp.Duration.ofNanos(nanos());
+		return (T) org.threeten.bp.Duration.ofNanos(toNanosLong());
+	}
+
+	/** @return the JScience {@link Amount} implementation of a time span */
+	@JsonIgnore
+	public Amount<javax.measure.quantity.Duration> toAmount()
+	{
+		return Amount.valueOf(getValue().toString()).to(getValue().getUnit());
 	}
 
 	/** @return the JSR-275 {@link Measurable} implementation of a time span */
@@ -153,12 +199,92 @@ public class Duration implements JsonWrapper<TimeSpan>
 		return getValue();
 	}
 
-	/** @see Converters.CLASS_WITH_VALUE_OF_METHOD */
-	public static Duration valueOf(final String json)
+	/**
+	 * for "natural" Config value conversion for a {@link Duration} (i.e.
+	 * {@link TimeSpan}).
+	 * 
+	 * @param value a duration as {@link DecimalMeasure JSR-275} measure (e.g.
+	 *            {@code "123 ms"}) or as ISO Period, parsed with
+	 *            {@link org.threeten.bp.Duration#parse(CharSequence) JSR-310}
+	 *            or {@link Period#parse(String) Joda}.
+	 * 
+	 *            Examples of ISO period:
+	 * 
+	 *            <pre>
+	 *    "PT20.345S" -> parses as "20.345 seconds"
+	 *    "PT15M"     -> parses as "15 minutes" (where a minute is 60 seconds)
+	 *    "PT10H"     -> parses as "10 hours" (where an hour is 3600 seconds)
+	 *    "P2D"       -> parses as "2 days" (where a day is 24 hours or 86400 seconds)
+	 *    "P2DT3H4M"  -> parses as "2 days, 3 hours and 4 minutes"
+	 *    "P-6H3M"    -> parses as "-6 hours and +3 minutes"
+	 *    "-P6H3M"    -> parses as "-6 hours and -3 minutes"
+	 *    "-P-6H+3M"  -> parses as "+6 hours and -3 minutes"
+	 * </pre>
+	 * 
+	 * @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD
+	 * @see org.threeten.bp.Duration#parse(String)
+	 * @see org.joda.time.format.ISOPeriodFormat#standard()
+	 * @see DecimalMeasure
+	 */
+	public static Duration valueOf(final String value)
 	{
-		return JsonUtil.valueOf(json, Duration.class);
+		return valueOf(TimeSpan.valueOf(value));
 	}
 
-	/** */
-	public static final Duration ZERO = Duration.valueOf("0");
+	/**
+	 * {@link Duration} static factory method
+	 * 
+	 * @param value
+	 */
+	public static Duration valueOf(final ReadableDuration value)
+	{
+		return valueOf(TimeSpan.valueOf(value));
+	}
+
+	/**
+	 * {@link Duration} static factory method
+	 * 
+	 * @param value
+	 */
+	public static Duration valueOf(
+			final Measure<? extends Number, javax.measure.quantity.Duration> value)
+	{
+		return valueOf(TimeSpan.valueOf(value));
+	}
+
+	/**
+	 * {@link Duration} static factory method
+	 * 
+	 * @param value
+	 */
+	public static Duration valueOf(
+			final Amount<javax.measure.quantity.Duration> value)
+	{
+		return valueOf(TimeSpan.valueOf(value));
+	}
+
+	/**
+	 * {@link Duration} static factory method
+	 * 
+	 * @param value the number of milliseconds
+	 */
+	public static Duration valueOf(final Number value)
+	{
+		return valueOf(TimeSpan.valueOf(value));
+	}
+
+	/**
+	 * {@link Duration} static factory method
+	 * 
+	 * @param value the {@link TimeSpan}
+	 */
+	public static Duration valueOf(final TimeSpan value)
+	{
+		return new Duration()
+		{
+			{
+				setValue(value);
+			}
+		};
+	}
 }

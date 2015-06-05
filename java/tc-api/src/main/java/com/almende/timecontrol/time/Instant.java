@@ -22,20 +22,21 @@ package com.almende.timecontrol.time;
 
 import io.coala.json.JsonWrapper;
 import io.coala.json.JsonWrapper.JsonPolymorphic;
-import io.coala.util.JsonUtil;
 
 import java.math.BigDecimal;
 import java.util.Date;
 
 import javax.measure.DecimalMeasure;
 import javax.measure.Measurable;
-import javax.measure.quantity.Duration;
+import javax.measure.Measure;
 import javax.measure.unit.SI;
 
+import org.joda.time.Period;
 import org.joda.time.ReadableInstant;
+import org.jscience.physics.amount.Amount;
 import org.threeten.bp.temporal.ChronoField;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.almende.timecontrol.TimeControl;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
@@ -80,7 +81,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
 @JsonPolymorphic
-public class Instant implements JsonWrapper<TimeSpan>
+public class Instant implements JsonWrapper<TimeSpan>, Comparable<Instant>
 {
 
 	private TimeSpan value;
@@ -109,37 +110,159 @@ public class Instant implements JsonWrapper<TimeSpan>
 		return getValue().hashCode();
 	}
 
-	/** @see Converters.CLASS_WITH_VALUE_OF_METHOD */
-	@JsonCreator
-	public static Instant valueOf(final String json)
+	@Override
+	public int compareTo(final Instant that)
 	{
-		return JsonUtil.valueOf(json, Instant.class);
+		return getValue().compareTo(that.getValue());
 	}
 
-	/** */
-	public static Instant valueOf(final Number millis)
+	@JsonIgnore
+	public long toMillisLong()
 	{
-		return valueOf(TimeSpan.valueOf(millis));
+		return getValue().longValue(TimeControl.MILLIS);
 	}
 
-	/** */
+	@JsonIgnore
+	public long toNanosLong()
+	{
+		return getValue().longValue(TimeControl.NANOS);
+	}
+
+	@JsonIgnore
+	public Date toDate()
+	{
+		return new Date(toMillisLong());
+	}
+
+	/** @return the Joda {@link ReadableInstant} implementation of an instant */
+	@JsonIgnore
+	public ReadableInstant toJoda()
+	{
+		return new org.joda.time.Instant(toMillisLong());
+	}
+
+	/**
+	 * @return the JSR-310 {@link org.threeten.bp.Instant} implementation of an
+	 *         instant
+	 */
+	@JsonIgnore
+	public org.threeten.bp.Instant toJava8()
+	{
+		return org.threeten.bp.Instant.ofEpochMilli(toMillisLong());
+	}
+
+	/** @return the JSR-275 {@link Measurable} implementation of an instant */
+	@JsonIgnore
+	public Measurable<javax.measure.quantity.Duration> toMeasure()
+	{
+		return getValue();
+	}
+
+	/**
+	 * @return the JScience {@link Amount} precision implementation of an
+	 *         instant
+	 */
+	@JsonIgnore
+	public Amount<javax.measure.quantity.Duration> toAmount()
+	{
+		return Amount.valueOf(getValue().toString()).to(getValue().getUnit());
+	}
+
+	/**
+	 * @param offset the instant that is considered the ZERO
+	 * @return the (possibly negative) {@link Duration} of this instant since
+	 *         specified {@code offset}
+	 */
+	public Duration toDuration(final Instant offset)
+	{
+		return Duration.valueOf(offset == null ? getValue().getValue()
+				: getValue().getValue().subtract(
+						offset.getValue().to(getValue().getUnit()).getValue()));
+	}
+
+	/**
+	 * for "natural" Config value conversion for a {@link Duration} (i.e.
+	 * {@link TimeSpan}).
+	 * 
+	 * @param value a duration as {@link DecimalMeasure JSR-275} measure (e.g.
+	 *            {@code "123 ms"}) or as ISO Period, parsed with
+	 *            {@link org.threeten.bp.Duration#parse(CharSequence) JSR-310}
+	 *            or {@link Period#parse(String) Joda}.
+	 * 
+	 *            Examples of ISO period:
+	 * 
+	 *            <pre>
+	 *    "PT20.345S" -> parses as "20.345 seconds"
+	 *    "PT15M"     -> parses as "15 minutes" (where a minute is 60 seconds)
+	 *    "PT10H"     -> parses as "10 hours" (where an hour is 3600 seconds)
+	 *    "P2D"       -> parses as "2 days" (where a day is 24 hours or 86400 seconds)
+	 *    "P2DT3H4M"  -> parses as "2 days, 3 hours and 4 minutes"
+	 *    "P-6H3M"    -> parses as "-6 hours and +3 minutes"
+	 *    "-P6H3M"    -> parses as "-6 hours and -3 minutes"
+	 *    "-P-6H+3M"  -> parses as "+6 hours and -3 minutes"
+	 * </pre>
+	 * 
+	 * @see org.aeonbits.owner.Converters.CLASS_WITH_VALUE_OF_METHOD
+	 * @see org.threeten.bp.Duration#parse(String)
+	 * @see org.joda.time.format.ISOPeriodFormat#standard()
+	 * @see DecimalMeasure
+	 */
+	public static Instant valueOf(final String value)
+	{
+		return valueOf(TimeSpan.valueOf(value));
+	}
+
+	/**
+	 * {@link Instant} static factory method
+	 * 
+	 * @param value
+	 */
 	public static Instant valueOf(final ReadableInstant joda)
 	{
 		return valueOf(joda.getMillis());
 	}
 
-	/** */
-	public static Instant valueOf(final org.threeten.bp.Instant temporal)
+	/**
+	 * {@link Instant} static factory method
+	 * 
+	 * @param value
+	 */
+	public static Instant valueOf(final org.threeten.bp.Instant value)
 	{
 		return valueOf(TimeSpan.valueOf(DecimalMeasure.valueOf(
-				BigDecimal.valueOf(temporal.get(ChronoField.NANO_OF_SECOND))
-						.add(BigDecimal.valueOf(
-								temporal.get(ChronoField.INSTANT_SECONDS))
-								.multiply(BigDecimal.TEN.pow(9))), SI
-						.NANO(SI.SECOND))));
+				BigDecimal.valueOf(value.get(ChronoField.NANO_OF_SECOND)).add(
+						BigDecimal.valueOf(
+								value.get(ChronoField.INSTANT_SECONDS))
+								.multiply(BigDecimal.TEN.pow(9))),
+				TimeControl.NANOS)));
 	}
 
-	/** */
+	/**
+	 * {@link Instant} static factory method
+	 * 
+	 * @param value
+	 */
+	public static Instant valueOf(
+			final Measure<? extends Number, javax.measure.quantity.Duration> value)
+	{
+		return valueOf(TimeSpan.valueOf(value));
+	}
+
+	/**
+	 * {@link Instant} static factory method
+	 * 
+	 * @param value the number of milliseconds
+	 */
+	public static Instant valueOf(final Number value)
+	{
+		return valueOf(TimeSpan.valueOf(value));
+	}
+
+	/**
+	 * {@link Instant} static factory method
+	 * 
+	 * @param value the {@link TimeSpan}
+	 */
 	public static Instant valueOf(final TimeSpan value)
 	{
 		return new Instant()
@@ -150,45 +273,4 @@ public class Instant implements JsonWrapper<TimeSpan>
 		};
 	}
 
-	@JsonIgnore
-	public long millis()
-	{
-		return getValue().longValue(SI.MILLI(SI.SECOND));
-	}
-
-	@JsonIgnore
-	public long nanos()
-	{
-		return getValue().longValue(SI.NANO(SI.SECOND));
-	}
-
-	@JsonIgnore
-	public Date toDate()
-	{
-		return new Date(millis());
-	}
-
-	/** @return the Joda {@link ReadableInstant} implementation of an instant */
-	@JsonIgnore
-	public ReadableInstant toJoda()
-	{
-		return new org.joda.time.Instant(millis());
-	}
-
-	/**
-	 * @return the JSR-310 {@link org.threeten.bp.Instant} implementation of an
-	 *         instant
-	 */
-	@JsonIgnore
-	public org.threeten.bp.Instant toJava8()
-	{
-		return org.threeten.bp.Instant.ofEpochMilli(millis());
-	}
-
-	/** @return the JSR-275 {@link Measurable} implementation of an instant */
-	@JsonIgnore
-	public Measurable<Duration> toMeasure()
-	{
-		return getValue();
-	}
 }

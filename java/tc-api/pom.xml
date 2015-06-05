@@ -19,7 +19,7 @@
 		<threetenbp.version>1.2</threetenbp.version>
 		<threeten-extra.version>0.9</threeten-extra.version>
 	</properties>
-	
+
 	<repositories>
 		<!-- Time-control public Maven repository -->
 		<repository>
@@ -110,6 +110,14 @@
 			<!-- Used as unit testing framework, supports test-driven development -->
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Reference implementation of JSR-363 for JDK 8. -->
+		<dependency>
+			<groupId>tec.uom</groupId>
+			<artifactId>uom-se</artifactId>
+			<version>0.7</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

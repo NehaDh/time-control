@@ -21,18 +21,21 @@
 package com.almende.timecontrol.entity;
 
 import io.coala.id.Identifier;
-import io.coala.json.dynabean.DynaBean;
-import io.coala.json.dynabean.DynaBean.BeanWrapper;
+import io.coala.json.DynaBean;
+import io.coala.json.DynaBean.BeanWrapper;
 import io.coala.util.JsonUtil;
 
+import java.lang.reflect.Method;
 import java.util.Properties;
 
 import org.aeonbits.owner.Accessible;
+import org.aeonbits.owner.Converter;
 import org.aeonbits.owner.Mutable;
 import org.joda.time.Interval;
 
 import com.almende.timecontrol.TimeControl;
 import com.almende.timecontrol.time.Duration;
+import com.almende.timecontrol.time.Instant;
 import com.almende.timecontrol.time.Rate;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonParser;
@@ -76,6 +79,7 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 
 	/** @return the {@link Status} of this {@link ClockData} */
 	@Key(TimeControl.STATUS_KEY)
+	@ConverterClass(Status.MyConverter.class)
 	Status status();
 
 	/**
@@ -115,6 +119,17 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 	@Key(TimeControl.TIME_KEY)
 	// @DefaultValue("")
 	Duration time();
+
+	/**
+	 * @return the current simulated time as relative duration since
+	 *         {@link Interval#getStart() interval#getStart()}, so at the start
+	 *         of the simulation {@code time.equals(Duration.ZERO)==true} and at
+	 *         the end of the simulation
+	 *         {@code time.equals(interval.toDuration())==true}
+	 */
+	@Key(TimeControl.OFFSET_KEY)
+	// @DefaultValue("")
+	Instant offset();
 
 	/**
 	 * @return the next simulated time when this {@link ClockConfig} will pause,
@@ -173,6 +188,19 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 		private final String value()
 		{
 			return this.jsonValue;
+		}
+
+		public static class MyConverter implements Converter<Status>
+		{
+			@Override
+			public Status convert(final Method method, final String input)
+			{
+				for (Status value : values())
+					if (value.value().equalsIgnoreCase(input))
+						return value;
+				throw new IllegalArgumentException(Status.class.getSimpleName()
+						+ " unknown: " + input);
+			}
 		}
 	}
 
@@ -292,6 +320,17 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 		public Builder withForkTime(final Duration forkTime)
 		{
 			with(TimeControl.FORK_TIME_KEY, forkTime);
+			return this;
+		}
+
+		public Builder withOffset(final TreeNode tree)
+		{
+			return withOffset(JsonUtil.valueOf(tree, Instant.class));
+		}
+
+		public Builder withOffset(final Instant offset)
+		{
+			with(TimeControl.OFFSET_KEY, offset);
 			return this;
 		}
 

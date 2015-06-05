@@ -21,8 +21,8 @@
 package com.almende.timecontrol.entity;
 
 import io.coala.id.Identifier;
-import io.coala.json.dynabean.DynaBean;
-import io.coala.json.dynabean.DynaBean.BeanWrapper;
+import io.coala.json.DynaBean;
+import io.coala.json.DynaBean.BeanWrapper;
 import io.coala.util.JsonUtil;
 
 import java.beans.PropertyChangeEvent;
@@ -166,6 +166,17 @@ public interface ClockEvent extends Comparable<ClockEvent>
 		}
 
 		/**
+		 * @param config
+		 * @return
+		 */
+		public static Builder fromClockConfig(ClockConfig config)
+		{
+			return fromClockId(config.id()).withTime(config.time())
+					.withStatus(config.status()).withDrag(config.drag())
+					.withUntil(config.until());
+		}
+
+		/**
 		 * @param oldConfig
 		 * @param newConfig
 		 * @param imports optional property defaults
@@ -257,18 +268,29 @@ public interface ClockEvent extends Comparable<ClockEvent>
 	 * @param events
 	 * @return
 	 */
-	class PropertyChangeListenerFilter
+	class PropertyChangePublisher
 	{
+		/**
+		 * @param clockConfig the config to listen/subscribe/monitor for changes
+		 * @param events the observer/subject for publishing {@link ClockEvent}s
+		 * @return a {@link PropertyChangeListener}
+		 */
 		public static PropertyChangeListener forObserver(
-				final ClockConfig.ID clockID, final Observer<ClockEvent> events)
+				final ClockConfig clockConfig, final Observer<ClockEvent> events)
 		{
 			return new PropertyChangeListener()
 			{
 				@Override
 				public void propertyChange(final PropertyChangeEvent evt)
 				{
+					if ((evt.getNewValue() == null && evt.getOldValue() != null)
+							|| (evt.getNewValue() != null && !evt.getNewValue()
+									.equals(evt.getOldValue())))
+						events.onNext(ClockEvent.Builder.fromClockConfig(
+								clockConfig).build());
+					/*
 					final Builder builder = ClockEvent.Builder
-							.fromClockId(clockID);
+							.fromClockId(clockConfig.id());
 					if (evt.getPropertyName().equals(TimeControl.STATUS_KEY))
 						events.onNext(builder.withStatus(
 								(ClockConfig.Status) evt.getNewValue()).build());
@@ -282,6 +304,7 @@ public interface ClockEvent extends Comparable<ClockEvent>
 					else if (evt.getPropertyName().equals(TimeControl.DRAG_KEY))
 						events.onNext(builder
 								.withDrag((Rate) evt.getNewValue()).build());
+								*/
 				}
 			};
 		}

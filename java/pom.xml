@@ -49,7 +49,7 @@
 	<modules>
 		<module>tc-core</module>
 		<module>tc-api</module>
-		<module>tc-impl</module>
+		<module>tc-impl-dsol3</module>
 
 		<module>tc-test</module>
 
