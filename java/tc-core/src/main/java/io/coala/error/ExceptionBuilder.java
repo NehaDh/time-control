@@ -26,7 +26,7 @@ import rx.subjects.Subject;
 
 /**
  * {@link ExceptionBuilder} creates {@link CheckedException}s and
- * {@link UncheckedException}s and publishes them as {@link ManagedException}
+ * {@link UncheckedException}s and publishes them as {@link ManageableException}
  * via static {@link #getObservable()} method.
  * <p>
  * TODO add createError(...) methods?
@@ -43,7 +43,7 @@ public abstract class ExceptionBuilder<THIS extends ExceptionBuilder<THIS>>
 	// Schedulers.newThread();
 
 	/** */
-	private static final Subject<ManagedException, ManagedException> EXCEPTION_PUBLISHER = PublishSubject
+	private static final Subject<ManageableException, ManageableException> EXCEPTION_PUBLISHER = PublishSubject
 			.create();
 
 	/** */
@@ -68,7 +68,6 @@ public abstract class ExceptionBuilder<THIS extends ExceptionBuilder<THIS>>
 		this.cause = cause;
 		with("message", message);
 		with("cause", cause == null ? null : cause.getClass().getName());
-		with("trace", cause == null ? null : cause.getStackTrace());
 	}
 
 	/**
@@ -89,7 +88,7 @@ public abstract class ExceptionBuilder<THIS extends ExceptionBuilder<THIS>>
 	 * @param e
 	 * @return
 	 */
-	protected <T extends ManagedException> T published(final T e)
+	protected <T extends ManageableException> T published(final T e)
 	{
 		// PUBLISH_SCHEDULER.createWorker().schedule(new Action0()
 		// {
@@ -130,16 +129,10 @@ public abstract class ExceptionBuilder<THIS extends ExceptionBuilder<THIS>>
 	/**
 	 * @return
 	 */
-	public static Observable<ManagedException> getObservable()
+	public static Observable<ManageableException> getObservable()
 	{
 		return EXCEPTION_PUBLISHER.asObservable();
 	}
-
-	/**
-	 * @param message
-	 * @return
-	 */
-	public abstract ManagedException build();
 
 	/**
 	 * @param message
@@ -251,5 +244,10 @@ public abstract class ExceptionBuilder<THIS extends ExceptionBuilder<THIS>>
 		return new UncheckedException.Builder(toString(messageFormat, args),
 				cause);
 	}
+
+	/**
+	 * @return the immutable {@link ManageableException}
+	 */
+	public abstract ManageableException build();
 
 }

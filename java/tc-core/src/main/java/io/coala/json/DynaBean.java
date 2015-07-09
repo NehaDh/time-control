@@ -148,6 +148,16 @@ public class DynaBean implements Cloneable
 	 * @param key
 	 * @return
 	 */
+	public boolean hasNonNull(final String key)
+	{
+		final Object value = get(key);
+		return value != null;
+	}
+
+	/**
+	 * @param key
+	 * @return
+	 */
 	public Object get(final String key)
 	{
 		return any().get(key);
@@ -405,7 +415,7 @@ public class DynaBean implements Cloneable
 							// remove bean property in favor of changed
 							// default config
 							// bean.remove(change.getPropertyName());
-							
+
 							/* TODO parse actual value into bean
 							try
 							{

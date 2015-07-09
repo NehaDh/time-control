@@ -20,11 +20,10 @@
  */
 package io.coala.error;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
+import com.eaio.uuid.UUID;
 
 /**
- * {@link ManagedException}
+ * {@link ManageableException}
  * 
  * TODO set interesting meta data attributes from config/defaults, e.g. error
  * codes, the originator Object, context Thread or stack, number of retries,
@@ -34,31 +33,34 @@ import java.io.PrintWriter;
  * @version $Id$
  * @author <a href="mailto:Rick@almende.org">Rick</a>
  */
-public interface ManagedException
+public interface ManageableException
 {
 	/** @see Throwable#getMessage() */
-	String getMessage();
+	// String getMessage();
 
 	/** @see Throwable#getCause() */
-	Throwable getCause();
+	// Throwable getCause();
 
 	/** @see Throwable#getStackTrace() */
-	StackTraceElement[] getStackTrace();
+	// StackTraceElement[] getStackTrace();
 
 	/** @see Throwable#printStackTrace() */
-	void printStackTrace();
+	// void printStackTrace();
 
 	/** @see Throwable#printStackTrace(PrintStream) */
-	void printStackTrace(PrintStream s);
+	// void printStackTrace(PrintStream s);
 
 	/** @see Throwable#printStackTrace(PrintWriter) */
-	void printStackTrace(PrintWriter s);
+	// void printStackTrace(PrintWriter s);
 
-	/** @return a JSON representation of this {@linkplain ManagedException} */
+	/** @return a JSON representation of this {@linkplain ManageableException} */
 	String toJSON();
 
 	/** @return the {@link ExceptionContext} */
 	ExceptionContext getContext();
+
+	/** @return the {@link UUID} */
+	UUID getUuid();
 
 	// context (application id, error code, ...)
 

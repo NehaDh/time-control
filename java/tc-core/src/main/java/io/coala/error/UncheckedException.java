@@ -20,6 +20,8 @@
  */
 package io.coala.error;
 
+import com.eaio.uuid.UUID;
+
 import io.coala.util.JsonUtil;
 
 /**
@@ -30,11 +32,14 @@ import io.coala.util.JsonUtil;
  * @author <a href="mailto:Rick@almende.org">Rick</a>
  */
 public class UncheckedException extends RuntimeException implements
-		ManagedException
+		ManageableException
 {
 
 	/** */
 	private static final long serialVersionUID = 1L;
+
+	/** */
+	private UUID uuid;
 
 	/** */
 	private ExceptionContext context = null;
@@ -46,7 +51,7 @@ public class UncheckedException extends RuntimeException implements
 	{
 		// empty
 	}
-	
+
 	/**
 	 * {@link UncheckedException} constructor
 	 */
@@ -54,8 +59,11 @@ public class UncheckedException extends RuntimeException implements
 			final String message)
 	{
 		super(message); // cause is initialized as "self"
-		context.lock();
+		this.uuid = new UUID();
 		this.context = context;
+		this.context.any().put("trace", getStackTrace());
+		this.context.any().put("uuid", getUuid());
+		this.context.lock();
 	}
 
 	/**
@@ -65,20 +73,29 @@ public class UncheckedException extends RuntimeException implements
 			final String message, final Throwable cause)
 	{
 		super(message, cause);
-		context.lock();
+		this.uuid = new UUID();
 		this.context = context;
+		this.context.any().put("trace", getStackTrace());
+		this.context.any().put("uuid", getUuid());
+		this.context.lock();
 	}
 
 	@Override
-	public String toJSON()
+	public UUID getUuid()
 	{
-		return JsonUtil.toJSON(this);
+		return this.uuid;
 	}
 
 	@Override
 	public ExceptionContext getContext()
 	{
 		return this.context;
+	}
+
+	@Override
+	public String toJSON()
+	{
+		return JsonUtil.toJSON(this);
 	}
 
 	/**
@@ -107,10 +124,10 @@ public class UncheckedException extends RuntimeException implements
 		@Override
 		public UncheckedException build()
 		{
-			return this.cause == null ? published(new UncheckedException(
-					this.context, this.message))
-					: published(new UncheckedException(this.context,
-							this.message, this.cause));
+			final UncheckedException ex = this.cause == null ? new UncheckedException(
+					this.context, this.message) : new UncheckedException(
+					this.context, this.message, this.cause);
+			return published(ex);
 		}
 
 	}

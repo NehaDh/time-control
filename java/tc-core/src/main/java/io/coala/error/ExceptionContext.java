@@ -66,4 +66,5 @@ public class ExceptionContext extends DynaBean
 	{
 		super.lock();
 	}
+
 }

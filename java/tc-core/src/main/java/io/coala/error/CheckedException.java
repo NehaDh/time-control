@@ -20,6 +20,8 @@
  */
 package io.coala.error;
 
+import com.eaio.uuid.UUID;
+
 import io.coala.util.JsonUtil;
 
 /**
@@ -29,11 +31,14 @@ import io.coala.util.JsonUtil;
  * @version $Id$
  * @author <a href="mailto:Rick@almende.org">Rick</a>
  */
-public class CheckedException extends Exception implements ManagedException
+public class CheckedException extends Exception implements ManageableException
 {
 
 	/** */
 	private static final long serialVersionUID = 1L;
+
+	/** */
+	private UUID uuid;
 
 	/** */
 	private ExceptionContext context;
@@ -52,8 +57,11 @@ public class CheckedException extends Exception implements ManagedException
 	public CheckedException(final ExceptionContext context, final String message)
 	{
 		super(message); // cause is initialized as "self"
-		context.lock();
+		this.uuid = new UUID();
 		this.context = context;
+		this.context.any().put("trace", getStackTrace());
+		this.context.any().put("uuid", getUuid());
+		this.context.lock();
 	}
 
 	/**
@@ -63,20 +71,29 @@ public class CheckedException extends Exception implements ManagedException
 			final String message, final Throwable cause)
 	{
 		super(message, cause);
-		context.lock();
+		this.uuid = new UUID();
 		this.context = context;
+		this.context.any().put("trace", getStackTrace());
+		this.context.any().put("uuid", getUuid());
+		this.context.lock();
 	}
 
 	@Override
-	public String toJSON()
+	public UUID getUuid()
 	{
-		return JsonUtil.toJSON(this);
+		return this.uuid;
 	}
 
 	@Override
 	public ExceptionContext getContext()
 	{
 		return this.context;
+	}
+
+	@Override
+	public String toJSON()
+	{
+		return JsonUtil.toJSON(this);
 	}
 
 	/**
@@ -105,10 +122,10 @@ public class CheckedException extends Exception implements ManagedException
 		@Override
 		public CheckedException build()
 		{
-			return this.cause == null ? published(new CheckedException(
-					this.context, this.message))
-					: published(new CheckedException(this.context,
-							this.message, this.cause));
+			final CheckedException ex = this.cause == null ? new CheckedException(
+					this.context, this.message) : new CheckedException(
+					this.context, this.message, this.cause);
+			return published(ex);
 		}
 
 	}
