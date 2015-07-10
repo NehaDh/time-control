@@ -23,6 +23,8 @@ package com.almende.timecontrol.dsol;
 import java.rmi.RemoteException;
 import java.util.Calendar;
 
+import javax.inject.Provider;
+
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.dsol.eventlists.RedBlackTree;
 import nl.tudelft.simulation.dsol.formalisms.eventscheduling.SimEventInterface;
@@ -240,5 +242,14 @@ public class DsolClockTuple extends ClockTuple
 
 		LOG.trace("{} status now: {}, DSOL running: {}", this.configID,
 				this.status, this.scheduler.isRunning());
+	}
+
+	public static class DefaultProvider implements Provider<ClockTuple>
+	{
+		@Override
+		public ClockTuple get()
+		{
+			return new DsolClockTuple();
+		}
 	}
 }

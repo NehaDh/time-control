@@ -20,13 +20,10 @@
 package io.coala.error;
 
 import io.coala.error.CheckedException.Builder;
-import rx.Observable;
-import rx.subjects.PublishSubject;
-import rx.subjects.Subject;
 
 /**
  * {@link ExceptionBuilder} creates {@link CheckedException}s and
- * {@link UncheckedException}s and publishes them as {@link ManageableException}
+ * {@link UncheckedException}s and publishes them as {@link Contextualized}
  * via static {@link #getObservable()} method.
  * <p>
  * TODO add createError(...) methods?
@@ -37,23 +34,14 @@ import rx.subjects.Subject;
  */
 public abstract class ExceptionBuilder<THIS extends ExceptionBuilder<THIS>>
 {
-
-	/** */
-	// private static final Scheduler PUBLISH_SCHEDULER =
-	// Schedulers.newThread();
-
-	/** */
-	private static final Subject<ManageableException, ManageableException> EXCEPTION_PUBLISHER = PublishSubject
-			.create();
-
 	/** */
 	protected final ExceptionContext context = new ExceptionContext();
 
 	/** */
-	protected final String message;
+	protected final Throwable cause;
 
 	/** */
-	protected final Throwable cause;
+	protected final String message;
 
 	/**
 	 * {@link Builder} constructor
@@ -66,8 +54,8 @@ public abstract class ExceptionBuilder<THIS extends ExceptionBuilder<THIS>>
 	{
 		this.message = message;
 		this.cause = cause;
-		with("message", message);
-		with("cause", cause == null ? null : cause.getClass().getName());
+		// with("message", message);
+		// with("cause", cause == null ? null : cause.getClass().getName());
 	}
 
 	/**
@@ -83,24 +71,9 @@ public abstract class ExceptionBuilder<THIS extends ExceptionBuilder<THIS>>
 	}
 
 	/**
-	 * Helper-method
-	 * 
-	 * @param e
-	 * @return
+	 * @return the immutable {@link Contextualized}
 	 */
-	protected <T extends ManageableException> T published(final T e)
-	{
-		// PUBLISH_SCHEDULER.createWorker().schedule(new Action0()
-		// {
-		// @Override
-		// public void call()
-		// {
-		// EXCEPTION_PUBLISHER.onNext(e);
-		// }
-		// });
-		EXCEPTION_PUBLISHER.onNext(e);
-		return e;
-	}
+	public abstract Contextualized build();
 
 	/**
 	 * Helper-method
@@ -124,14 +97,6 @@ public abstract class ExceptionBuilder<THIS extends ExceptionBuilder<THIS>>
 			final Object... args)
 	{
 		return String.format(messageFormat, args);
-	}
-
-	/**
-	 * @return
-	 */
-	public static Observable<ManageableException> getObservable()
-	{
-		return EXCEPTION_PUBLISHER.asObservable();
 	}
 
 	/**
@@ -244,10 +209,5 @@ public abstract class ExceptionBuilder<THIS extends ExceptionBuilder<THIS>>
 		return new UncheckedException.Builder(toString(messageFormat, args),
 				cause);
 	}
-
-	/**
-	 * @return the immutable {@link ManageableException}
-	 */
-	public abstract ManageableException build();
 
 }

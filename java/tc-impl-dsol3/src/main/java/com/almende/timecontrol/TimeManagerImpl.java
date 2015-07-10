@@ -169,7 +169,8 @@ public class TimeManagerImpl implements TimeManagerAPI
 
 				// LOG.trace("Updating clock config {} => {}", key, newValue);
 
-				result.config.setProperty(key, newValue);
+				if (result.config != null)
+					result.config.setProperty(key, newValue);
 				result.onChange(key, newValue);
 				// if (key.equals(TimeControl.DRAG_KEY))
 				// reschedule(clockId, config.drag());
@@ -185,10 +186,16 @@ public class TimeManagerImpl implements TimeManagerAPI
 	@Override
 	public Observable<ClockEvent> observeClock(final ClockConfig.ID id)
 	{
-		LOG.trace("Observing clock " + id + ", config: " + getTimerConfig());
-		LOG.trace("Root clock: " + getTimerConfig().rootClockId());
-		final ClockConfig.ID clockId = id == null ? getTimerConfig()
-				.rootClockId() : id;
+		final TimerConfig cfg = getTimerConfig();
+		if (cfg == null)
+		{
+			LOG.warn("Clock not yet configured: " + id);
+			return Observable.empty();
+		}
+		LOG.trace("Observing clock " + id + ", config: " + cfg);
+		final ClockConfig.ID rootId = cfg.rootClockId();
+		LOG.trace("Root clock: " + rootId);
+		final ClockConfig.ID clockId = id == null ? rootId : id;
 		synchronized (this.clocks)
 		{
 			ClockTuple clock = this.clocks.get(clockId);

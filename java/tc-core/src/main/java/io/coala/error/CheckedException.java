@@ -20,9 +20,9 @@
  */
 package io.coala.error;
 
-import com.eaio.uuid.UUID;
-
 import io.coala.util.JsonUtil;
+
+import com.eaio.uuid.UUID;
 
 /**
  * {@link CheckedException}
@@ -31,7 +31,7 @@ import io.coala.util.JsonUtil;
  * @version $Id$
  * @author <a href="mailto:Rick@almende.org">Rick</a>
  */
-public class CheckedException extends Exception implements ManageableException
+public class CheckedException extends Exception implements Contextualized
 {
 
 	/** */
@@ -59,8 +59,8 @@ public class CheckedException extends Exception implements ManageableException
 		super(message); // cause is initialized as "self"
 		this.uuid = new UUID();
 		this.context = context;
-		this.context.any().put("trace", getStackTrace());
-		this.context.any().put("uuid", getUuid());
+		// this.context.any().put("trace", getStackTrace());
+		// this.context.any().put("uuid", getUuid().toString());
 		this.context.lock();
 	}
 
@@ -73,8 +73,8 @@ public class CheckedException extends Exception implements ManageableException
 		super(message, cause);
 		this.uuid = new UUID();
 		this.context = context;
-		this.context.any().put("trace", getStackTrace());
-		this.context.any().put("uuid", getUuid());
+		// this.context.any().put("trace", getStackTrace());
+		// this.context.any().put("uuid", getUuid().toString());
 		this.context.lock();
 	}
 
@@ -94,6 +94,19 @@ public class CheckedException extends Exception implements ManageableException
 	public String toJSON()
 	{
 		return JsonUtil.toJSON(this);
+	}
+
+	@Override
+	public int compareTo(final Contextualized o)
+	{
+		return COMPARATOR.compare(this, o);
+	}
+
+	@Override
+	public String getMessage()
+	{
+		return String.format("%s [%s] %s", super.getMessage(), getUuid(),
+				getContext());
 	}
 
 	/**
@@ -125,7 +138,7 @@ public class CheckedException extends Exception implements ManageableException
 			final CheckedException ex = this.cause == null ? new CheckedException(
 					this.context, this.message) : new CheckedException(
 					this.context, this.message, this.cause);
-			return published(ex);
+			return Publisher.toPublished(ex);
 		}
 
 	}

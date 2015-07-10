@@ -17,8 +17,7 @@
  */
 package com.almende.timecontrol.bean;
 
-import io.coala.error.ExceptionBuilder;
-import io.coala.error.ManagedException;
+import io.coala.error.Contextualized;
 import io.coala.util.JsonUtil;
 
 import java.util.Properties;
@@ -49,8 +48,8 @@ public class BeanTest
 	@Test
 	public void marshalBeanTest()
 	{
-		ExceptionBuilder.getObservable().subscribe(
-				new Observer<ManagedException>()
+		Contextualized.Publisher.asObservable().subscribe(
+				new Observer<Throwable>()
 				{
 					@Override
 					public void onCompleted()
@@ -65,18 +64,21 @@ public class BeanTest
 					}
 
 					@Override
-					public void onNext(final ManagedException t)
+					public void onNext(final Throwable t)
 					{
-						LOG.trace("Observed exception: " + t.getContext());
+						LOG.trace("Observed exception: "
+								+ ((Contextualized) t).getContext());
 						t.printStackTrace();
 					}
 				});
 
-		LOG.trace("Period json: " + JsonUtil.stringify(Duration.parse("PT123s")));
+		LOG.trace("Period json: "
+				+ JsonUtil.stringify(Duration.parse("PT123s")));
 		// LOG.trace("Period json: "+JsonUtil.toJSON(Period.parse("PT1.4s")));
 
-		final ClockConfig.ID parentID = ClockConfig.ID.valueOf("\"theRoot\""); // TODO loose
-																	// quotes?
+		final ClockConfig.ID parentID = ClockConfig.ID.valueOf("\"theRoot\""); // TODO
+																				// loose
+		// quotes?
 		final Properties defaults = new Properties();
 		defaults.setProperty("id", parentID.toString());
 		defaults.setProperty("time", "PT1.2S");

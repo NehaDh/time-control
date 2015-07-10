@@ -92,9 +92,18 @@ public class JsonUtil
 	 */
 	public static String toJSON(final Object object)
 	{
+		return toJSON(getJOM(), object);
+	}
+
+	/**
+	 * @param object the object to serialize/marshal as (pretty) JSON
+	 * @return the (pretty) JSON representation
+	 */
+	public static String toJSON(final ObjectMapper om, final Object object)
+	{
 		try
 		{
-			return getJOM()
+			return om
 					// .setSerializationInclusion(JsonInclude.Include.NON_NULL)
 					.writer().withDefaultPrettyPrinter()
 					.writeValueAsString(object);

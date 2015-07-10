@@ -32,7 +32,7 @@ import io.coala.util.JsonUtil;
  * @author <a href="mailto:Rick@almende.org">Rick</a>
  */
 public class UncheckedException extends RuntimeException implements
-		ManageableException
+		Contextualized
 {
 
 	/** */
@@ -61,8 +61,8 @@ public class UncheckedException extends RuntimeException implements
 		super(message); // cause is initialized as "self"
 		this.uuid = new UUID();
 		this.context = context;
-		this.context.any().put("trace", getStackTrace());
-		this.context.any().put("uuid", getUuid());
+		// this.context.any().put("trace", getStackTrace());
+		// this.context.any().put("uuid", getUuid());
 		this.context.lock();
 	}
 
@@ -75,8 +75,8 @@ public class UncheckedException extends RuntimeException implements
 		super(message, cause);
 		this.uuid = new UUID();
 		this.context = context;
-		this.context.any().put("trace", getStackTrace());
-		this.context.any().put("uuid", getUuid());
+		// this.context.any().put("trace", getStackTrace());
+		// this.context.any().put("uuid", getUuid());
 		this.context.lock();
 	}
 
@@ -96,6 +96,19 @@ public class UncheckedException extends RuntimeException implements
 	public String toJSON()
 	{
 		return JsonUtil.toJSON(this);
+	}
+
+	@Override
+	public int compareTo(final Contextualized o)
+	{
+		return COMPARATOR.compare(this, o);
+	}
+
+	@Override
+	public String getMessage()
+	{
+		return String.format("%s [%s] %s", super.getMessage(), getUuid(),
+				getContext());
 	}
 
 	/**
@@ -127,7 +140,7 @@ public class UncheckedException extends RuntimeException implements
 			final UncheckedException ex = this.cause == null ? new UncheckedException(
 					this.context, this.message) : new UncheckedException(
 					this.context, this.message, this.cause);
-			return published(ex);
+			return Publisher.toPublished(ex);
 		}
 
 	}

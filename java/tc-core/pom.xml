@@ -15,13 +15,14 @@
 	<properties>
 		<joda-time.version>2.7</joda-time.version>
 		<junit.version>4.12</junit.version>
+		<hamcrest.version>1.3</hamcrest.version>
 
 		<rxjava.version>0.20.7</rxjava.version>
 		<uuid.version>3.4</uuid.version>
 		<owner.version>1.0.6</owner.version>
 	</properties>
 
-	
+
 	<repositories>
 		<!-- Time-control public Maven repository -->
 		<repository>
@@ -120,6 +121,12 @@
 			<!-- Used as unit testing framework, supports test-driven development -->
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest-all</artifactId>
+			<version>${hamcrest.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
