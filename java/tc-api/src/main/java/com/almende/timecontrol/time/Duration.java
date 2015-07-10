@@ -79,7 +79,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * href="https://github.com/google/guava">github.com/google/guava</a></dt>
  * <dd>
  * extends relevant Java types only with a (time-line offset) interval (
- * {@code Range}) API, not an (free floating) duration quantity</dd>
+ * {@code Range}) API, not a (free floating) duration quantity</dd>
  * <dt>DESMO-J's TimeSpan API from <a
  * href="http://desmoj.sf.net/">desmoj.sf.net</a></dt>
  * <dd>limited to Java's standard TimeUnit</dd>
