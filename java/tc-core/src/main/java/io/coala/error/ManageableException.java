@@ -20,6 +20,9 @@
  */
 package io.coala.error;
 
+import java.io.PrintStream;
+import java.io.PrintWriter;
+
 import com.eaio.uuid.UUID;
 
 /**
@@ -35,23 +38,32 @@ import com.eaio.uuid.UUID;
  */
 public interface ManageableException
 {
+	/** @see Throwable#initCause(Throwable) */
+	Throwable initCause(Throwable t);
+
 	/** @see Throwable#getMessage() */
-	// String getMessage();
+	String getMessage();
+
+	/** @see Throwable#getLocalizedMessage() */
+	String getLocalizedMessage();
 
 	/** @see Throwable#getCause() */
-	// Throwable getCause();
+	Throwable getCause();
 
 	/** @see Throwable#getStackTrace() */
-	// StackTraceElement[] getStackTrace();
+	StackTraceElement[] getStackTrace();
+
+	/** @see Throwable#fillInStackTrace() */
+	Throwable fillInStackTrace();
 
 	/** @see Throwable#printStackTrace() */
-	// void printStackTrace();
+	void printStackTrace();
 
 	/** @see Throwable#printStackTrace(PrintStream) */
-	// void printStackTrace(PrintStream s);
+	void printStackTrace(PrintStream s);
 
 	/** @see Throwable#printStackTrace(PrintWriter) */
-	// void printStackTrace(PrintWriter s);
+	void printStackTrace(PrintWriter s);
 
 	/** @return a JSON representation of this {@linkplain ManageableException} */
 	String toJSON();
