@@ -91,7 +91,7 @@ public interface TriggerConfig extends Comparable<TriggerConfig> // , Accessible
 		public static Builder fromJSON(final String json,
 				final Properties... imports)
 		{
-			return fromJSON(JsonUtil.valueOf(json), imports);
+			return fromJSON(JsonUtil.toTree(json), imports);
 		}
 
 		/**

@@ -148,10 +148,31 @@ public class DynaBean implements Cloneable
 	 * @param key
 	 * @return
 	 */
+	public boolean has(final String key)
+	{
+		return any().containsKey(key);
+	}
+
+	/**
+	 * @param key
+	 * @return
+	 */
 	public boolean hasNonNull(final String key)
 	{
 		final Object value = get(key);
 		return value != null;
+	}
+
+	/**
+	 * @param key
+	 * @param value
+	 * @return {@code true} iff this bean contains the specified {@code value}
+	 *         at specified {@code key}, i.e. both null/empty or both equal
+	 */
+	public boolean match(final String key, final Object value)
+	{
+		final Object v = get(key);
+		return value == null ? v == null : value.equals(v);
 	}
 
 	/**

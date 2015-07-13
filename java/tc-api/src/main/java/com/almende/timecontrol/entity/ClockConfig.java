@@ -238,7 +238,7 @@ public interface ClockConfig extends Comparable<ClockConfig>, Mutable,
 		public static Builder fromJSON(final String json,
 				final Properties... imports)
 		{
-			return fromJSON(JsonUtil.valueOf(json));
+			return fromJSON(JsonUtil.toTree(json));
 		}
 
 		/**

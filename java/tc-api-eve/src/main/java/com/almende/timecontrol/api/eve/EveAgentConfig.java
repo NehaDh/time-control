@@ -196,7 +196,7 @@ public interface EveAgentConfig extends ParentConfig
 		@Override
 		public JsonNode convert(final Method method, final String input)
 		{
-			return JsonUtil.valueOf(input);
+			return JsonUtil.toTree(input);
 		}
 	}
 
@@ -212,7 +212,7 @@ public interface EveAgentConfig extends ParentConfig
 		@Override
 		public AgentConfig convert(final Method method, final String input)
 		{
-			return new AgentConfig((ObjectNode) JsonUtil.valueOf(input));
+			return new AgentConfig((ObjectNode) JsonUtil.toTree(input));
 		}
 	}
 

@@ -21,7 +21,7 @@
 package com.almende.timecontrol.time;
 
 import io.coala.error.ExceptionBuilder;
-import io.coala.json.JsonWrapper;
+import io.coala.json.Wrapper;
 
 import javax.measure.DecimalMeasure;
 import javax.measure.Measurable;
@@ -39,7 +39,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * {@linkplain Duration} wraps an {@linkplain TimeSpan} that is
- * {@linkplain JsonPolymorphic} and provides a {@link #valueOf(String)} method
+ * {@linkplain Polymorphic} and provides a {@link #valueOf(String)} method
  * for loading as configured value {@link Converters#CLASS_WITH_VALUE_OF_METHOD}
  * <p>
  * We considered various temporal measure implementations, including
@@ -92,7 +92,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-public class Duration implements JsonWrapper<TimeSpan>, Comparable<Duration>
+public class Duration implements Wrapper<TimeSpan>, Comparable<Duration>
 {
 
 	/** */

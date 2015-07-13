@@ -20,8 +20,8 @@
  */
 package com.almende.timecontrol.time;
 
-import io.coala.json.JsonWrapper;
-import io.coala.json.JsonWrapper.JsonPolymorphic;
+import io.coala.json.Wrapper;
+import io.coala.json.Wrapper.Polymorphic;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -41,7 +41,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * {@linkplain Instant} wraps a {@linkplain TimeSpan} that is
- * {@linkplain JsonPolymorphic} (measuring the duration since the EPOCH,
+ * {@linkplain Polymorphic} (measuring the duration since the EPOCH,
  * 1970-01-01T00:00:00Z) and provides a {@link #valueOf(String)} method for
  * loading as configured value {@link Converters#CLASS_WITH_VALUE_OF_METHOD}
  * <p>
@@ -80,8 +80,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * @version $Id$
  * @author <a href="mailto:rick@almende.org">Rick</a>
  */
-@JsonPolymorphic
-public class Instant implements JsonWrapper<TimeSpan>, Comparable<Instant>
+@Polymorphic
+public class Instant implements Wrapper<TimeSpan>, Comparable<Instant>
 {
 
 	private TimeSpan value;

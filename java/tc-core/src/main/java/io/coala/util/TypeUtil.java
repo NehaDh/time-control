@@ -267,6 +267,12 @@ public class TypeUtil
 		return result;
 	}
 
+	/**
+	 * @param genericType the ancestor/base class
+	 * @param type the concrete descendant/child class
+	 * @param typeArgCache
+	 * @return a (cached) list of the raw classes for the actual type arguments.
+	 */
 	public static <T> List<Class<?>> getTypeArguments(
 			final Class<T> genericType, final Class<? extends T> type,
 			final Map<Class<?>, List<Class<?>>> typeArgCache)

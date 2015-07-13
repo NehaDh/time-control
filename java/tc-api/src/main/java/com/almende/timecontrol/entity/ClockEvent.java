@@ -144,7 +144,7 @@ public interface ClockEvent extends Comparable<ClockEvent>
 		public static Builder fromJSON(final String json,
 				final Properties... imports)
 		{
-			return fromJSON(JsonUtil.valueOf(json));
+			return fromJSON(JsonUtil.toTree(json));
 		}
 
 		/**

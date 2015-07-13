@@ -21,7 +21,7 @@ package io.coala.util;
 
 import io.coala.error.ExceptionBuilder;
 import io.coala.json.DynaBean;
-import io.coala.json.JsonWrapper;
+import io.coala.json.Wrapper;
 import io.coala.json.DynaBean.BeanWrapper;
 
 import java.beans.PropertyEditorSupport;
@@ -37,6 +37,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
@@ -77,9 +78,11 @@ public class JsonUtil
 	 */
 	public static String stringify(final Object object)
 	{
+		final ObjectMapper om = getJOM();
 		try
 		{
-			return getJOM().writer().writeValueAsString(object);
+			checkRegistered(om, object.getClass());
+			return om.writer().writeValueAsString(object);
 		} catch (final JsonProcessingException e)
 		{
 			throw ExceptionBuilder.unchecked("Problem JSONifying", e).build();
@@ -120,10 +123,10 @@ public class JsonUtil
 	public static JsonNode toTree(final Object object)
 	{
 		final ObjectMapper om = getJOM();
-		// checkRegistered(om, object.getClass());
-		// return om.valueToTree(object);
 		try
 		{
+			// checkRegistered(om, object.getClass());
+			// return om.valueToTree(object);
 			return om.readTree(stringify(object));
 		} catch (final Exception e)
 		{
@@ -134,10 +137,11 @@ public class JsonUtil
 	}
 
 	/**
-	 * @param json the {@link InputStream}
-	 * @return
+	 * @param json the {@link InputStream} of JSON formatted value
+	 * @return the parsed/deserialized/unmarshalled {@link JsonNode} tree
+	 * @see ObjectMapper#readTree(InputStream)
 	 */
-	public static JsonNode valueOf(final InputStream json)
+	public static JsonNode toTree(final InputStream json)
 	{
 		try
 		{
@@ -146,6 +150,24 @@ public class JsonUtil
 		{
 			throw ExceptionBuilder.unchecked("Problem unmarshalling", e)
 					.build();
+		}
+	}
+
+	/**
+	 * @param json the JSON formatted value
+	 * @return the parsed/deserialized/unmarshalled {@link JsonNode} tree
+	 * @see ObjectMapper#readTree(String)
+	 */
+	public static JsonNode toTree(final String json)
+	{
+		try
+		{
+			return json == null || json.isEmpty() ? null : getJOM().readTree(
+					json);
+		} catch (final Exception e)
+		{
+			throw ExceptionBuilder.unchecked(
+					"Problem unmarshalling JSON: " + json, e).build();
 		}
 	}
 
@@ -171,34 +193,29 @@ public class JsonUtil
 	}
 
 	/**
-	 * @param json the JSON formatted value
-	 * @return the parsed/deserialized/unmarshalled {@link JsonNode} tree
-	 * @see ObjectMapper#readTree(String)
-	 */
-	public static JsonNode valueOf(final String json)
-	{
-		try
-		{
-			return json == null || json.isEmpty() ? null : getJOM().readTree(
-					json);
-		} catch (final Exception e)
-		{
-			throw ExceptionBuilder.unchecked(
-					"Problem unmarshalling JSON: " + json, e).build();
-		}
-	}
-
-	/**
-	 * @param json the JSON formatted value
+	 * @param json the JSON formatted {@link String} value
 	 * @param resultType the type of result {@link Object}
+	 * @param imports the {@link Properties} instances for default values, etc.
 	 * @return the parsed/deserialized/unmarshalled {@link Object}
 	 */
 	public static <T> T valueOf(final String json, final Class<T> resultType,
 			final Properties... imports)
 	{
+		return valueOf(getJOM(), json, resultType, imports);
+	}
+
+	/**
+	 * @param om the {@link ObjectMapper} used to parse/deserialize/unmarshal
+	 * @param json the JSON formatted {@link String} value
+	 * @param resultType the type of result {@link Object}
+	 * @param imports the {@link Properties} instances for default values, etc.
+	 * @return the parsed/deserialized/unmarshalled {@link Object}
+	 */
+	public static <T> T valueOf(final ObjectMapper om, final String json,
+			final Class<T> resultType, final Properties... imports)
+	{
 		try
 		{
-			final ObjectMapper om = getJOM();
 			return json == null || json.isEmpty() ? null : (T) om.readValue(
 					json, checkRegistered(om, resultType, imports));
 		} catch (final Exception e)
@@ -210,23 +227,74 @@ public class JsonUtil
 	}
 
 	/**
-	 * @param node the partially parsed JSON {@link TreeNode}
+	 * @param tree the partially parsed JSON {@link TreeNode}
 	 * @param resultType the type of result {@link Object}
+	 * @param imports the {@link Properties} instances for default values, etc.
 	 * @return the parsed/deserialized/unmarshalled {@link Object}
 	 */
-	public static <T> T valueOf(final TreeNode json, Class<T> resultType,
+	public static <T> T valueOf(final TreeNode tree, final Class<T> resultType,
 			final Properties... imports)
+	{
+		return valueOf(getJOM(), tree, resultType, imports);
+	}
+
+	/**
+	 * @param om the {@link ObjectMapper} used to parse/deserialize/unmarshal
+	 * @param tree the partially parsed JSON {@link TreeNode}
+	 * @param resultType the type of result {@link Object}
+	 * @param imports the {@link Properties} instances for default values, etc.
+	 * @return the parsed/deserialized/unmarshalled {@link Object}
+	 */
+	public static <T> T valueOf(final ObjectMapper om, final TreeNode tree,
+			final Class<T> resultType, final Properties... imports)
 	{
 		try
 		{
-			final ObjectMapper om = getJOM();
-			return json == null ? null : (T) om.treeToValue(json,
+			return tree == null ? null : (T) om.treeToValue(tree,
 					checkRegistered(om, resultType, imports));
 		} catch (final Exception e)
 		{
 			throw ExceptionBuilder.unchecked(
 					"Problem unmarshalling " + resultType.getName()
-							+ " from JSON: " + json, e).build();
+							+ " from JSON: " + tree, e).build();
+		}
+	}
+
+	/**
+	 * @param json the JSON formatted {@link String} value
+	 * @param typeReference the result type {@link TypeReference}
+	 * @param imports the {@link Properties} instances for default values, etc.
+	 * @return the parsed/deserialized/unmarshalled {@link Object}
+	 */
+	public static <T> T valueOf(final String json,
+			final TypeReference<T> typeReference, final Properties... imports)
+	{
+		return valueOf(getJOM(), json, typeReference, imports);
+	}
+
+	/**
+	 * @param om the {@link ObjectMapper} used to parse/deserialize/unmarshal
+	 * @param json the JSON formatted {@link String} value
+	 * @param typeReference the result type {@link TypeReference}
+	 * @param imports the {@link Properties} instances for default values, etc.
+	 * @return the parsed/deserialized/unmarshalled {@link Object}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T valueOf(final ObjectMapper om, final String json,
+			final TypeReference<T> typeReference, final Properties... imports)
+	{
+		try
+		{
+			final Class<?> rawType = om.getTypeFactory()
+					.constructType(typeReference).getRawClass();
+			checkRegistered(om, rawType, imports);
+			return json == null ? null : (T) om.readValue(json, typeReference);
+
+		} catch (final Exception e)
+		{
+			throw ExceptionBuilder.unchecked(
+					"Problem unmarshalling " + typeReference + " from JSON: "
+							+ json, e).build();
 		}
 	}
 
@@ -260,13 +328,15 @@ public class JsonUtil
 	}
 
 	/**
-	 * cache of registered {@link JsonWrapper} or {@link DynaBean} types per
+	 * cache of registered {@link Wrapper} or {@link DynaBean} types per
 	 * {@link ObjectMapper}'s {@link #hashCode()}
 	 */
 	public static final Map<ObjectMapper, Set<Class<?>>> JSON_REGISTRATION_CACHE = new WeakHashMap<>();
 
 	/**
-	 * @param type
+	 * @param om the {@link ObjectMapper} used to parse/deserialize/unmarshal
+	 * @param type the {@link Class} to register
+	 * @param imports the {@link Properties} instances for default values, etc.
 	 * @return
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -301,10 +371,9 @@ public class JsonUtil
 					}
 
 				// LOG.trace("Registered Dynabean de/serializer for: " + type);
-			} else if (JsonWrapper.class.isAssignableFrom(type))
+			} else if (Wrapper.class.isAssignableFrom(type))
 				// {
-				JsonWrapper.Util.registerType(om,
-						(Class<? extends JsonWrapper>) type);
+				Wrapper.Util.registerType(om, (Class<? extends Wrapper>) type);
 
 			// LOG.trace("Registered Wrapper de/serializer for: " + type);
 			// } else

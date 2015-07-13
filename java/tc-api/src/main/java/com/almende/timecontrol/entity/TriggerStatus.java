@@ -74,7 +74,7 @@ public interface TriggerStatus // extends Accessible
 		public static Builder fromJSON(final String json,
 				final Properties... imports)
 		{
-			final TreeNode tree = JsonUtil.valueOf(json);
+			final TreeNode tree = JsonUtil.toTree(json);
 			return tree == null ? new Builder(imports)
 					: fromJSON(tree, imports);
 		}

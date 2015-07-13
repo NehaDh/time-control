@@ -134,7 +134,7 @@ public interface TimerConfig extends Comparable<TimerConfig>, Accessible
 		public static Builder fromJSON(final String json,
 				final Properties... imports)
 		{
-			return fromJSON(JsonUtil.valueOf(json));
+			return fromJSON(JsonUtil.toTree(json));
 		}
 
 		/**

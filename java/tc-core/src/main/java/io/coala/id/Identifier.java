@@ -20,7 +20,7 @@
  */
 package io.coala.id;
 
-import io.coala.json.JsonWrapper;
+import io.coala.json.Wrapper;
 import io.coala.util.TypeUtil;
 
 import java.lang.reflect.Method;
@@ -30,7 +30,7 @@ import javax.inject.Provider;
 /**
  * {@link Identifier} wraps some reference value. Its un/wrapping should be
  * handled automatically handled at JSON de/serialization, thanks to
- * {@link JsonWrapper.Util#registerType(Class)}. See also this page on using <a
+ * {@link Wrapper.Util#registerType(Class)}. See also this page on using <a
  * href="http://wiki.fasterxml.com/JacksonPolymorphicDeserialization" >Jackson
  * Polymorphic Deserialization</a>
  * 
@@ -45,7 +45,7 @@ import javax.inject.Provider;
  * @param <T> the wrapped ({@link Comparable}) type of reference value
  */
 public abstract class Identifier<T extends Comparable<T>> implements
-		Comparable<Identifier<T>>, JsonWrapper<T>
+		Comparable<Identifier<T>>, Wrapper<T>
 {
 
 	/** */
@@ -62,38 +62,27 @@ public abstract class Identifier<T extends Comparable<T>> implements
 		this.value = value;
 	}
 
-	/**
-	 * @return the reference value
-	 */
+	/** @return the reference value */
 	public T getValue()
 	{
 		return this.value;
 	}
-	
+
 	@Override
 	public int hashCode()
 	{
 		return getValue().hashCode();
 	}
-	
+
 	@Override
 	public boolean equals(final Object that)
 	{
-		return getValue()==null?that==null:getValue().equals(that);
+		return getValue() == null ? that == null : getValue().equals(that);
 	}
 
 	@Override
 	public String toString()
 	{
-		/*try
-		{
-			return JsonUtil.getJOM().writeValueAsString(getValue());
-		} catch (final IOException e)
-		{
-			LOG.warn("Problem serializing " + getClass().getName()
-					+ " wrapping " + getValue(), e);
-			return getValue().toString();
-		}*/
 		return getValue().toString();
 	}
 
@@ -104,12 +93,13 @@ public abstract class Identifier<T extends Comparable<T>> implements
 	}
 
 	/**
-	 * TODO see if the {@linkplain Class type} argument can be resolved from
-	 * this method's {@linkplain Method#getReturnType() return type} at runtime
+	 * TODO see if the {@linkplain Class type} argument can be resolved at
+	 * runtime from this method's {@linkplain Method#getReturnType() return
+	 * type}
 	 * 
 	 * @param json
 	 * @param type
-	 * @return
+	 * @return the deserialized {@link Identifier}
 	 */
 	public static <S extends Comparable<S>, T extends Identifier<S>> T valueOf(
 			final String json, final Class<T> type)
@@ -120,7 +110,7 @@ public abstract class Identifier<T extends Comparable<T>> implements
 	/**
 	 * @param json
 	 * @param provider
-	 * @return
+	 * @return the deserialized {@link Identifier}
 	 */
 	public static <S extends Comparable<S>, T extends Identifier<S>> T valueOf(
 			final String json, final Provider<T> provider)
@@ -130,13 +120,13 @@ public abstract class Identifier<T extends Comparable<T>> implements
 
 	/**
 	 * @param json
-	 * @param result
-	 * @return
+	 * @param result the wrapper to (re)use
+	 * @return the deserialized {@link Identifier}
 	 */
 	public static <S extends Comparable<S>, T extends Identifier<S>> T valueOf(
 			final String json, final T result)
 	{
-		return JsonWrapper.Util.valueOf(json, result);
+		return Wrapper.Util.valueOf(json, result);
 	}
 
 	/**

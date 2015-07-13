@@ -1,10 +1,11 @@
 package io.coala.error;
 
-import org.apache.logging.log4j.LogManager;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import io.coala.util.LogUtil;
+
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 
 import rx.Observer;
 import rx.functions.Func1;
@@ -20,7 +21,7 @@ public class ErrorTest
 {
 
 	/** */
-	private static final Logger LOG = LogManager.getLogger(ErrorTest.class);
+	private static final Logger LOG = LogUtil.getLogger(ErrorTest.class);
 
 	@Test
 	public void testChecked1()
@@ -35,8 +36,7 @@ public class ErrorTest
 					{
 						LOG.trace("Filtering managed exception with context: "
 								+ t.getContext());
-						final Object v = t.getContext().get(k1);
-						return v != null && v.equals(v1);
+						return t.getContext().match(k1, v1);
 					}
 				}).subscribe(new Observer<Contextualized>()
 				{
@@ -65,12 +65,12 @@ public class ErrorTest
 
 		// should be filtered out
 		ExceptionBuilder.unchecked(e1, "u1: %s", "due to " + e1.getUuid())
-				.with("k3", "v3").with("k4", "v4").build();
+				.with("k2", "v3").with("k3", "v4").build();
 
 		// should be logged
 		final UncheckedException u2 = ExceptionBuilder
 				.unchecked(e1, "u2: %s", "due to " + e1.getUuid()).with(k1, v1)
-				.with("k4", "v4").build();
+				.with("k2", "v5").build();
 
 		// cause should precede (be smaller than) effect
 		assertThat("UUID clock sequence", (Contextualized) u2,
